@@ -76,6 +76,7 @@ class DroneDataset(Dataset):
             for line in fd:
                 line = line.decode(encoding='utf-8').split(',')
                 x1, y1, w, h, score, label, _, _ = line
+                x1, y1, w, h, score = int(x1), int(y1), int(w), int(h), int(score)
                 x2 = x1 + w
                 y2 = y1 + h
                 boxes.append( [x1, y1, x2, y2] )
