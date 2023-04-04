@@ -8,6 +8,7 @@ import argparse
 # Image Processing and CV Imports
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
 
 # PyTorch Imports
 import torch
@@ -131,6 +132,7 @@ def parse():
 
     # Model Config
     parser.add_argument('--use_pretrained', action='store_true', help='Uses pretrained Imagenet weights for MobileNetv3 backbone')
+    parser.add_argument('--num_classes', type=int, default=11, help='Number of classes for the Classification Head')
 
     args = parser.parse_args()
     return args
@@ -165,6 +167,31 @@ def get_loaders(args: Any) -> Tuple[DataLoader, DataLoader]:
 
 def collate_fn(batch) -> Tuple:
     return tuple(zip(*batch))
+
+
+def plot_stats(args: Any, train_losses: List, val_losses: List, misclfs: List):
+    plt.figure(figsize=(12,12))
+    n = len(train_losses) + 1
+    plt.plot( list(range(1, n)), train_losses )
+    plt.plot( list(range(1, n)), val_losses )
+    plt.title('Loss vs Epcohs')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend(['Training', 'Validation'])
+
+    if not os.path.exists(args.save_dir):
+        os.makedirs(args.save_dir)
+    
+    plt.savefig( os.path.join(args.save_dir, 'loss.png'), dpi='figure' )
+
+    plt.figure(figsize=(12,12))
+    plt.plot( list(range(1,n)), misclfs )
+    plt.title('Avg. Misclassifications vs Epochs')
+    plt.xlabel('Epochs')
+    plt.ylabel('Avg. Misclassifications')
+    plt.legend(['Misclfs'])
+
+    plt.savefig( os.path.join(args.save_dir, 'misclfs.png'), dpi='figure' )
 
 
 

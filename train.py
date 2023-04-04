@@ -137,3 +137,16 @@ def train(args: Any, model: nn.Module, train_loader: DataLoader, val_loader: Dat
 
     torch.save(model.state_dict(), os.path.join(args.save_dir, 'model.pth'))
     return train_losses, val_losses, misclfs
+
+
+
+if __name__ == '__main__':
+    args = parse()
+    if args.train:
+        train_loader, val_loader = get_loaders(args)
+        model = SSDLite(num_classes=args.num_classes, pretrained=args.use_pretrained)
+        train_losses, val_losses, misclfs = train(args, model, train_loader, val_loader)
+        plot_stats(args, train_losses, val_losses, misclfs)
+    
+    elif args.eval_ckpt or args.eval_pth:
+        raise NotImplementedError()
