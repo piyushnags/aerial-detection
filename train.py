@@ -59,10 +59,10 @@ def evaluate(model, val_loader, device):
         outputs = model(images)
 
         losses = [
-            torch.mean( 
+            torch.mean([ 
                 torch.abs(output['boxes'] - t['boxes']) 
                 for output, t in zip(outputs, targets)
-            ) 
+            ]) 
         ]
 
         loss_value = sum(losses).item()
