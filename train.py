@@ -12,6 +12,7 @@ import torchvision
 from models import *
 from utils import *
 from tqdm import tqdm
+from vision.references.detection.engine import evaluate as eval
 
 
 def train_one_epoch(model, train_loader, device, optimizer, epoch, freq):
@@ -56,7 +57,8 @@ def evaluate(model, val_loader, device):
         images = list(image.to(device) for image in images)
         targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
 
-        outputs = model(images)
+        with torch.no_grad():
+            outputs = model(images)
 
         losses = [
             torch.mean([ 
@@ -112,14 +114,15 @@ def train(args: Any, model: nn.Module, train_loader: DataLoader, val_loader: Dat
     
     for epoch in range(1, epochs+1):
         l1 = train_one_epoch(model, train_loader, device, optimizer, epoch, args.print_freq)
-        l2, misclf = evaluate(model, val_loader, device)
+        # l2, misclf = evaluate(model, val_loader, device)
+        eval(model, val_loader, device)
         
         if scheduler is not None:
             scheduler.step()
         
         train_losses.append(l1)
-        val_losses.append(l2)
-        misclfs.append(misclf)
+        # val_losses.append(l2)
+        # misclfs.append(misclf)
 
         if epoch % args.log_interval == 0:
             torch.save(
