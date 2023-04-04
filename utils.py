@@ -78,7 +78,7 @@ class DroneDataset(Dataset):
             for line in fd:
                 line = line.decode(encoding='utf-8').split(',')
                 x1, y1, w, h, score, label, _, _ = line
-                x1, y1, w, h, score = int(x1), int(y1), int(w), int(h), int(score)
+                x1, y1, w, h, score, label = int(x1), int(y1), int(w), int(h), int(score), int(label)
                 x2 = x1 + w
                 y2 = y1 + h
                 boxes.append( [x1, y1, x2, y2] )
@@ -115,6 +115,7 @@ def parse():
     parser.add_argument('--log_interval', type=int, default=5, help='Frequency of logging checkpoints')
     parser.add_argument('--batch_size', type=int, default=128, help='batch size for training and validation')
     parser.add_argument('--num_batches', type=int, default=330, help='Total training batches for training and validation split as 90/10')
+    parser.add_argument('--num_workers', type=int, default=2, help='number of worker threads for the dataloaders. Beware of Multiprocessing bugs')
     parser.add_argument('--aug', action='store_true', help='Flag to enable augmentation with Gaussian noise')
 
     # General parameters
@@ -155,7 +156,21 @@ def get_loaders(args: Any) -> Tuple[DataLoader, DataLoader]:
         dataset, [train_batches, val_batches, len(dataset) - args.batch_size*args.num_batches]
     )
 
-    train_loader = DataLoader(train_data, args.batch_size, shuffle=True, num_workers=2)
-    val_loader = DataLoader(val_data, args.batch_size, num_workers=2)
+    train_loader = DataLoader(train_data, args.batch_size, shuffle=True, num_workers=args.num_workers, collate_fn=collate_fn)
+    val_loader = DataLoader(val_data, args.batch_size, num_workers=args.num_workers, collate_fn=collate_fn)
 
     return train_loader, val_loader
+
+
+def collate_fn(batch):
+    return tuple(zip(*batch))
+
+
+
+if __name__ == '__main__':
+    dataset = DroneDataset('data.zip', None)
+    loader = DataLoader(dataset, batch_size=2, shuffle=True, collate_fn=collate_fn)
+    for img, targets in loader:
+        # print(img)
+        print(targets)
+        break
