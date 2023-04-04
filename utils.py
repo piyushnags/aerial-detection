@@ -90,8 +90,6 @@ class DroneDataset(Dataset):
         targets['labels'] = torch.as_tensor(labels)
         targets['scores'] = torch.as_tensor(scores)
 
-        print(targets)
-
         if self.transforms is not None:
             img, targets = self.transforms(img, targets)
         
@@ -134,7 +132,7 @@ def parse():
 
     # Model Config
     parser.add_argument('--use_pretrained', action='store_true', help='Uses pretrained Imagenet weights for MobileNetv3 backbone')
-    parser.add_argument('--num_classes', type=int, default=11, help='Number of classes for the Classification Head')
+    parser.add_argument('--num_classes', type=int, default=12, help='Number of classes for the Classification Head')
 
     args = parser.parse_args()
     return args
