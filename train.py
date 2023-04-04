@@ -14,14 +14,10 @@ from utils import *
 from tqdm import tqdm
 
 
-def train_one_epoch(model, train_loader, device, optimizer, epoch, freq, args):
+def train_one_epoch(model, train_loader, device, optimizer, epoch, freq):
     model.train()
 
     batch_loss = []
-
-    lr_scheduler = None
-    if args.scheduler == 'step':
-        lr_scheduler = StepLR(optimizer, args.step_size, args.gamma)
     
     for batch_idx, (images, targets) in enumerate(tqdm(train_loader)):
         images = list(image.to(device) for image in images)
@@ -41,9 +37,6 @@ def train_one_epoch(model, train_loader, device, optimizer, epoch, freq, args):
         optimizer.zero_grad()
         losses.backward()
         optimizer.step()
-
-        if lr_scheduler is not None:
-            lr_scheduler.step()
         
         if batch_idx % freq == 0:
             print(f'Epoch {epoch} Batch {batch_idx+1}, Loss: {loss_value}')
@@ -86,5 +79,61 @@ def evaluate(model, val_loader, device):
     return avg_loss, misclf
 
 
-def train():
-    pass
+def train(args: Any, model: nn.Module, train_loader: DataLoader, val_loader: DataLoader):
+    print(f'Number of training samples: {args.batch_size*len(train_loader)} samples')
+    print(f'Number of validation samples: {args.batch_size*len(val_loader)} samples')
+
+    if args.device == 'cuda':
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    else:
+        device = torch.device('cpu')
+    
+    epochs = args.num_epochs
+    params = [p for p in model.parameters() if p.requires_grad]
+    trainable = sum([p.numel() for p in model.parameters() if p.requires_grad])
+    print("No. of trainable parameters: {}".format(trainable))
+    model.to(device)
+
+    if args.optim == 'adam':
+        optimizer = torch.optim.Adam(params, lr=args.lr, weight_decay=args.weight_decay)
+    else:
+        raise ValueError(f'Optimizer {args.optim} not supported currently')
+
+    scheduler = None
+    if args.scheduler == 'step':
+        scheduler = StepLR(optimizer, args.step_size, args.gamma)
+    
+    train_losses = []
+    val_losses = []
+    misclfs = []
+
+    if not os.path.exists(args.save_dir):
+        os.makedirs(args.save_dir)
+    
+    for epoch in range(1, epochs+1):
+        l1 = train_one_epoch(model, train_loader, device, optimizer, epoch, args.print_freq)
+        l2, misclf = evaluate(model, val_loader, device)
+        
+        if scheduler is not None:
+            scheduler.step()
+        
+        train_losses.append(l1)
+        val_losses.append(l2)
+        misclfs.append(misclf)
+
+        if epoch % args.log_interval == 0:
+            torch.save(
+                {
+                    "epoch":epoch,
+                    "model_state_dict":model.state_dict(),
+                    "optimizer_state_dict":optimizer.state_dict(),
+                    "training_losses":train_losses,
+                    "val_losses":val_losses,
+                    "misclfs":misclfs,
+                    "scheduler_state_dict":scheduler.state_dict()
+                },
+                os.path.join(args.save_dir, f'ckpt_{epoch}.ckpt')
+            )
+
+    torch.save(model.state_dict(), os.path.join(args.save_dir, 'model.pth'))
+    return train_losses, val_losses, misclfs

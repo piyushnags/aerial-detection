@@ -113,6 +113,7 @@ def parse():
     parser.add_argument('--gamma', type=float, default=0.975, help='Decay for step LR scheduler')
     parser.add_argument('--num_epochs', type=int, default=10, help='Number of Epochs to train')
     parser.add_argument('--log_interval', type=int, default=5, help='Frequency of logging checkpoints')
+    parser.add_argument('--print_freq', type=int, default=10, help='Frequency for displaying stats (batches)')
     parser.add_argument('--batch_size', type=int, default=128, help='batch size for training and validation')
     parser.add_argument('--num_batches', type=int, default=330, help='Total training batches for training and validation split as 90/10')
     parser.add_argument('--num_workers', type=int, default=2, help='number of worker threads for the dataloaders. Beware of Multiprocessing bugs')
@@ -162,7 +163,7 @@ def get_loaders(args: Any) -> Tuple[DataLoader, DataLoader]:
     return train_loader, val_loader
 
 
-def collate_fn(batch):
+def collate_fn(batch) -> Tuple:
     return tuple(zip(*batch))
 
 
