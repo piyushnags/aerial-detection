@@ -29,7 +29,7 @@ class DroneDataset(Dataset):
         fd.close()
         self.zip_file = ZipFile( BytesIO(zip_content), 'r' )
 
-        img_prefix = 'data-train/images/'
+        img_prefix = 'VisDrone2019-DET-train/images/'
         img_list = (
             list(filter( 
                 lambda x: x[:len(img_prefix)] == img_prefix and x[-4:] == '.jpg',
@@ -37,7 +37,7 @@ class DroneDataset(Dataset):
             ))
         )
 
-        ann_prefix = 'data-train/annotations/'
+        ann_prefix = 'VisDrone2019-DET-train/annotations/'
         ann_list = (
             list(filter( 
                 lambda x: x[:len(ann_prefix)] == ann_prefix and x[-4:] == '.txt',
