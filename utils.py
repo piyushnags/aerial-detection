@@ -90,6 +90,8 @@ class DroneDataset(Dataset):
         targets['labels'] = torch.as_tensor(labels)
         targets['scores'] = torch.as_tensor(scores)
 
+        print(targets)
+
         if self.transforms is not None:
             img, targets = self.transforms(img, targets)
         
