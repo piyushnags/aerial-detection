@@ -63,7 +63,7 @@ def evaluate(model, val_loader, device):
         print(f'size of output: {outputs[0]["boxes"].size()}')
         print(f'size of target boxes: {targets[0]["boxes"].size()}')
 
-        print(f'sample output boxes:\n {output[0]["boxes"]}')
+        print(f'sample output boxes:\n {outputs[0]["boxes"]}')
         print(f'sample target boxes:\n {targets[0]["boxes"]}')
 
         losses = [
