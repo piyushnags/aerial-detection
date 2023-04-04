@@ -29,7 +29,7 @@ class DroneDataset(Dataset):
         fd.close()
         self.zip_file = ZipFile( BytesIO(zip_content), 'r' )
 
-        img_prefix = 'images/'
+        img_prefix = 'data-train/images/'
         img_list = (
             list(filter( 
                 lambda x: x[:len(img_prefix)] == img_prefix and x[-4:] == '.jpg',
@@ -37,7 +37,7 @@ class DroneDataset(Dataset):
             ))
         )
 
-        ann_prefix = 'annotations/'
+        ann_prefix = 'data-train/annotations/'
         ann_list = (
             list(filter( 
                 lambda x: x[:len(ann_prefix)] == ann_prefix and x[-4:] == '.txt',
@@ -196,7 +196,7 @@ def plot_stats(args: Any, train_losses: List, val_losses: List, misclfs: List):
 
 
 if __name__ == '__main__':
-    dataset = DroneDataset('data.zip', None)
+    dataset = DroneDataset('VisDrone2019-DET-train.zip', None)
     loader = DataLoader(dataset, batch_size=2, shuffle=True, collate_fn=collate_fn)
     for img, targets in loader:
         # print(img)
