@@ -159,6 +159,7 @@ def get_loaders(args: Any) -> Tuple[DataLoader, DataLoader]:
         dataset, [train_batches, val_batches, len(dataset) - args.batch_size*args.num_batches]
     )
 
+    # FIXME: Enable shuffling for train loader
     train_loader = DataLoader(train_data, args.batch_size, shuffle=False, num_workers=args.num_workers, collate_fn=collate_fn)
     val_loader = DataLoader(val_data, args.batch_size, num_workers=args.num_workers, collate_fn=collate_fn)
 
