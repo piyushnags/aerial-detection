@@ -12,7 +12,6 @@ import torchvision
 from models import *
 from utils import *
 from tqdm import tqdm
-from vision.references.detection.engine import evaluate as eval
 
 
 def train_one_epoch(model, train_loader, device, optimizer, epoch, freq):
@@ -115,7 +114,7 @@ def train(args: Any, model: nn.Module, train_loader: DataLoader, val_loader: Dat
     for epoch in range(1, epochs+1):
         l1 = train_one_epoch(model, train_loader, device, optimizer, epoch, args.print_freq)
         # l2, misclf = evaluate(model, val_loader, device)
-        eval(model, val_loader, device)
+        # eval(model, val_loader, device)
         
         if scheduler is not None:
             scheduler.step()
