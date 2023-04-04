@@ -29,7 +29,7 @@ class DroneDataset(Dataset):
         fd.close()
         self.zip_file = ZipFile( BytesIO(zip_content), 'r' )
 
-        img_prefix = 'data/images/'
+        img_prefix = 'images/'
         img_list = (
             list(filter( 
                 lambda x: x[:len(img_prefix)] == img_prefix and x[-4:] == '.jpg',
@@ -37,7 +37,7 @@ class DroneDataset(Dataset):
             ))
         )
 
-        ann_prefix = 'data/annotations/'
+        ann_prefix = 'annotations/'
         ann_list = (
             list(filter( 
                 lambda x: x[:len(ann_prefix)] == ann_prefix and x[-4:] == '.txt',
@@ -116,7 +116,7 @@ def parse():
     parser.add_argument('--log_interval', type=int, default=5, help='Frequency of logging checkpoints')
     parser.add_argument('--print_freq', type=int, default=10, help='Frequency for displaying stats (batches)')
     parser.add_argument('--batch_size', type=int, default=128, help='batch size for training and validation')
-    parser.add_argument('--num_batches', type=int, default=330, help='Total training batches for training and validation split as 90/10')
+    parser.add_argument('--num_batches', type=int, default=33, help='Total training batches for training and validation split as 90/10')
     parser.add_argument('--num_workers', type=int, default=2, help='number of worker threads for the dataloaders. Beware of Multiprocessing bugs')
     parser.add_argument('--aug', action='store_true', help='Flag to enable augmentation with Gaussian noise')
 
