@@ -124,6 +124,7 @@ def parse():
     parser.add_argument('--save_dir', type=str, default='results')
     parser.add_argument('--data_dir', type=str, default='data/', help='Root dir of data')
     parser.add_argument('--device', type=str, default='cpu', help='Device to train on')
+    parser.add_argument('--pin', action='store_true', default='Flag to enable memory pinning for faster training')
     parser.add_argument('--visualize', action='store_true', help='flag to visualize some results')
 
     # Evaluate Existing Model
@@ -159,8 +160,8 @@ def get_loaders(args: Any) -> Tuple[DataLoader, DataLoader]:
         dataset, [train_batches, val_batches, len(dataset) - args.batch_size*args.num_batches]
     )
 
-    train_loader = DataLoader(train_data, args.batch_size, shuffle=True, num_workers=args.num_workers, collate_fn=collate_fn)
-    val_loader = DataLoader(val_data, args.batch_size, num_workers=args.num_workers, collate_fn=collate_fn)
+    train_loader = DataLoader(train_data, args.batch_size, shuffle=True, num_workers=args.num_workers, collate_fn=collate_fn, pin_memory=args.pin)
+    val_loader = DataLoader(val_data, args.batch_size, num_workers=args.num_workers, collate_fn=collate_fn, pin_memory=args.pin)
 
     return train_loader, val_loader
 
