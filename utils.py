@@ -159,8 +159,7 @@ def get_loaders(args: Any) -> Tuple[DataLoader, DataLoader]:
         dataset, [train_batches, val_batches, len(dataset) - args.batch_size*args.num_batches]
     )
 
-    # FIXME: Enable shuffling for train loader
-    train_loader = DataLoader(train_data, args.batch_size, shuffle=False, num_workers=args.num_workers, collate_fn=collate_fn)
+    train_loader = DataLoader(train_data, args.batch_size, shuffle=True, num_workers=args.num_workers, collate_fn=collate_fn)
     val_loader = DataLoader(val_data, args.batch_size, num_workers=args.num_workers, collate_fn=collate_fn)
 
     return train_loader, val_loader
@@ -171,28 +170,35 @@ def collate_fn(batch) -> Tuple:
 
 
 def plot_stats(args: Any, train_losses: List, val_losses: List, misclfs: List):
+    
+    # FIXME: Enable val losses and misclfs after fixes in evaluate
+    # func in train.py
     plt.figure(figsize=(12,12))
     n = len(train_losses) + 1
     plt.plot( list(range(1, n)), train_losses )
-    plt.plot( list(range(1, n)), val_losses )
+    # plt.plot( list(range(1, n)), val_losses )
     plt.title('Loss vs Epcohs')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
-    plt.legend(['Training', 'Validation'])
+    
+    # FIXME: Uncomment following line after fixes
+    # plt.legend(['Training', 'Validation'])
+    plt.legend(['Training'])
 
     if not os.path.exists(args.save_dir):
         os.makedirs(args.save_dir)
     
     plt.savefig( os.path.join(args.save_dir, 'loss.png'), dpi='figure' )
+    plt.show()
 
-    plt.figure(figsize=(12,12))
-    plt.plot( list(range(1,n)), misclfs )
-    plt.title('Avg. Misclassifications vs Epochs')
-    plt.xlabel('Epochs')
-    plt.ylabel('Avg. Misclassifications')
-    plt.legend(['Misclfs'])
+    # plt.figure(figsize=(12,12))
+    # plt.plot( list(range(1,n)), misclfs )
+    # plt.title('Avg. Misclassifications vs Epochs')
+    # plt.xlabel('Epochs')
+    # plt.ylabel('Avg. Misclassifications')
+    # plt.legend(['Misclfs'])
 
-    plt.savefig( os.path.join(args.save_dir, 'misclfs.png'), dpi='figure' )
+    # plt.savefig( os.path.join(args.save_dir, 'misclfs.png'), dpi='figure' )
 
 
 
