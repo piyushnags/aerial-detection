@@ -75,7 +75,7 @@ class DroneDataset(Dataset):
             for line in fd:
                 line = line.decode(encoding='utf-8').split(',')
                 try:
-                    x1, y1, w, h, score, label, _, _ = line
+                    x1, y1, w, h, score, label, _, _ = line[:8]
                 except ValueError:
                     print(line)
                 x1, y1, w, h, score, label = int(x1), int(y1), int(w), int(h), int(score), int(label)
