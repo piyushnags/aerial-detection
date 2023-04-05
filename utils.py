@@ -56,6 +56,7 @@ class DroneDataset(Dataset):
         self.preprocess = T.Compose([
             T.ToTensor(),
         ])
+        self.eps = 1e-2
     
 
     def __getitem__(self, idx: int) -> Tuple[List[Tensor], List[Dict[str, Tensor]]]:
@@ -75,8 +76,8 @@ class DroneDataset(Dataset):
                 line = line.decode(encoding='utf-8').split(',')
                 x1, y1, w, h, score, label, _, _ = line
                 x1, y1, w, h, score, label = int(x1), int(y1), int(w), int(h), int(score), int(label)
-                x2 = x1 + w
-                y2 = y1 + h
+                x2 = x1 + w + self.eps
+                y2 = y1 + h + self.eps
                 boxes.append( [x1, y1, x2, y2] )
                 labels.append(label)
                 scores.append(score)
