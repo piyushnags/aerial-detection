@@ -61,6 +61,10 @@ def evaluate(model, val_loader, device):
         with torch.no_grad():
             outputs = model(images)        
 
+        print(f'outputs:\n{outputs}')
+        print(f'targets:\n{targets}')
+        print(f'val_loader img list:\n{val_loader.dataset.img_list}')
+        print(f'val_loader ann list:\n{val_loader.dataset.ann_list}')
         losses = [
             torch.mean([ 
                 torch.abs(output['boxes'] - t['boxes']) 
