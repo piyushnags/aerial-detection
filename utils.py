@@ -1,5 +1,5 @@
 # Built-in Imports
-import os
+import os, sys
 from typing import Callable, Optional, Tuple, List, Dict, Any
 from io import BytesIO
 from zipfile import ZipFile
@@ -71,6 +71,7 @@ class DroneDataset(Dataset):
         boxes = []
         labels = []
         scores = []
+
         with self.zip_file.open(ann_path) as fd:
             for line in fd:
                 line = line.decode(encoding='utf-8').split(',')
@@ -78,6 +79,7 @@ class DroneDataset(Dataset):
                     x1, y1, w, h, score, label, _, _ = line[:8]
                 except ValueError:
                     print(line)
+                    sys.exit(1)
                 x1, y1, w, h, score, label = int(x1), int(y1), int(w), int(h), int(score), int(label)
                 x2 = x1 + w + self.eps
                 y2 = y1 + h + self.eps
@@ -176,13 +178,13 @@ def plot_stats(args: Any, train_losses: List, val_losses: List, misclfs: List):
     plt.figure(figsize=(12,12))
     n = len(train_losses) + 1
     plt.plot( list(range(1, n)), train_losses )
-    # plt.plot( list(range(1, n)), val_losses )
+    plt.plot( list(range(1, n)), val_losses )
     plt.title('Loss vs Epcohs')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     
     # FIXME: Uncomment following line after fixes
-    # plt.legend(['Training', 'Validation'])
+    plt.legend(['Training', 'Validation'])
     plt.legend(['Training'])
 
     if not os.path.exists(args.save_dir):
@@ -191,14 +193,14 @@ def plot_stats(args: Any, train_losses: List, val_losses: List, misclfs: List):
     plt.savefig( os.path.join(args.save_dir, 'loss.png'), dpi='figure' )
     plt.show()
 
-    # plt.figure(figsize=(12,12))
-    # plt.plot( list(range(1,n)), misclfs )
-    # plt.title('Avg. Misclassifications vs Epochs')
-    # plt.xlabel('Epochs')
-    # plt.ylabel('Avg. Misclassifications')
-    # plt.legend(['Misclfs'])
+    plt.figure(figsize=(12,12))
+    plt.plot( list(range(1,n)), misclfs )
+    plt.title('Avg. Misclassifications vs Epochs')
+    plt.xlabel('Epochs')
+    plt.ylabel('Avg. Misclassifications')
+    plt.legend(['Misclfs'])
 
-    # plt.savefig( os.path.join(args.save_dir, 'misclfs.png'), dpi='figure' )
+    plt.savefig( os.path.join(args.save_dir, 'misclfs.png'), dpi='figure' )
 
 
 

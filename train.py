@@ -117,15 +117,15 @@ def train(args: Any, model: nn.Module, train_loader: DataLoader, val_loader: Dat
         l1 = train_one_epoch(model, train_loader, device, optimizer, epoch, args.print_freq)
         
         # FIXME: Enable corrected version of evaluate func
-        # l2, misclf = evaluate(model, val_loader, device)
+        l2, misclf = evaluate(model, val_loader, device)
         # eval(model, val_loader, device)
         
         if scheduler is not None:
             scheduler.step()
         
         train_losses.append(l1)
-        # val_losses.append(l2)
-        # misclfs.append(misclf)
+        val_losses.append(l2)
+        misclfs.append(misclf)
 
         # FIXME: Uncomment saving val losses and misclfs
         if epoch % args.log_interval == 0:
@@ -135,8 +135,8 @@ def train(args: Any, model: nn.Module, train_loader: DataLoader, val_loader: Dat
                     "model_state_dict":model.state_dict(),
                     "optimizer_state_dict":optimizer.state_dict(),
                     "training_losses":train_losses,
-                    # "val_losses":val_losses,
-                    # "misclfs":misclfs,
+                    "val_losses":val_losses,
+                    "misclfs":misclfs,
                     "scheduler_state_dict":scheduler.state_dict()
                 },
                 os.path.join(args.save_dir, f'ckpt_{epoch}.ckpt')
@@ -145,8 +145,8 @@ def train(args: Any, model: nn.Module, train_loader: DataLoader, val_loader: Dat
     torch.save(model.state_dict(), os.path.join(args.save_dir, 'model.pth'))
     
     # FIXME: Return all losses and misclassifications
-    # return train_losses, val_losses, misclfs
-    return train_losses
+    return train_losses, val_losses, misclfs
+    # return train_losses
 
 
 
@@ -155,10 +155,10 @@ if __name__ == '__main__':
     if args.train:
         train_loader, val_loader = get_loaders(args)
         model = SSDLite(num_classes=args.num_classes, pretrained=args.use_pretrained)
-        # train_losses, val_losses, misclfs = train(args, model, train_loader, val_loader)
+        train_losses, val_losses, misclfs = train(args, model, train_loader, val_loader)
         # FIXME: temporary hack
-        train_losses = train(args, model, train_loader, val_loader)
-        val_losses, misclfs = [], []
+        # train_losses = train(args, model, train_loader, val_loader)
+        # val_losses, misclfs = [], []
         plot_stats(args, train_losses, val_losses, misclfs)
     
     elif args.eval_ckpt or args.eval_pth:
