@@ -1,6 +1,5 @@
 # Project-specific files
-data.zip
-VisDrone2019-DET-train.zip
+data/
 
 idea/
 

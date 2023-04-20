@@ -102,6 +102,115 @@ class DroneDataset(Dataset):
 
 
 
+class PennFudanDataset(Dataset):
+    def __init__(self, root: str, transforms: Optional[Callable] = None):
+        super(PennFudanDataset, self).__init__()
+
+        fd = open(root, 'rb')
+        zip_content = fd.read()
+        fd.close()
+        self.zip_file = ZipFile( BytesIO(zip_content), 'r' )
+
+        img_prefix = 'PennFudanPed/PNGImages/'
+        img_list = (
+            list(filter( 
+                lambda x: x[:len(img_prefix)] == img_prefix and x[-4:] == '.png',
+                self.zip_file.namelist() 
+            ))
+        )
+
+        ann_prefix = 'PennFudanPed/Annotation/'
+        ann_list = (
+            list(filter( 
+                lambda x: x[:len(ann_prefix)] == ann_prefix and x[-4:] == '.txt',
+                self.zip_file.namelist() 
+            ))
+        )
+
+        for img, ann in zip(img_list, ann_list):
+            if img[len(img_prefix):-4] != ann[len(ann_prefix):-4]:
+                raise RuntimeError('Images and Annotations are not sorted in the correct order')
+        
+        self.img_list = img_list
+        self.ann_list = ann_list
+
+        self.transforms = transforms
+        self.preprocess = T.Compose([
+            T.ToTensor(),
+        ])
+
+
+    def __getitem__(self, idx: int) -> Tuple[List[Tensor], List[Dict[str, Tensor]]]:
+        img_path = self.img_list[idx]
+        ann_path = self.ann_list[idx]
+
+        # Read the image in RGB format
+        img_buf = self.zip_file.read(name=img_path)
+        img = cv2.imdecode(np.frombuffer(img_buf, dtype=np.uint8), cv2.IMREAD_COLOR)
+        img = self.preprocess( cv2.cvtColor(img, cv2.COLOR_BGR2RGB) )
+
+        # Initialize data structures for targets
+        targets = {}
+        boxes = []
+        labels = []
+        iscrowd = []
+        image_id = []
+        area = []
+
+        # Parse the annotations text file
+        # Comments begin with '#', so ignore those lines
+        # We only need bbox lines 
+        with self.zip_file.open(ann_path) as fd:
+            for line in fd:
+                if line[0] == "#":
+                    continue
+                else:
+                    line = line.decode(encoding='utf-8').split(':')
+                    if 'Bounding box' in line[0]:
+                        tmp = line[1].split('-')
+                        tmp = list(map(lambda x: x.strip(), tmp))
+                        tmp = list( map( lambda x: x[1:-1].split(','), tmp ) )
+                        xmin, ymin = tmp[0]
+                        xmax, ymax = tmp[1]
+                        xmin, ymin, xmax, ymax = int(xmin), int(ymin), int(xmax), int(ymax)
+                        boxes.append([ xmin, ymin, xmax, ymax ])
+
+
+        # Convert bboxes to torch tensors
+        boxes = torch.as_tensor(boxes, dtype=torch.float32)
+        targets['boxes'] = boxes
+
+        # Only 1 class, so initialize all objects with 1
+        # 0 is for background class
+        labels = torch.ones( (len(boxes),), dtype=torch.int64 )
+        targets['labels'] = labels
+
+        # Ignore crowds, irrelevant for the purpose of this project
+        # Initialize it with zeros
+        iscrowd = torch.zeros( (len(boxes),), dtype=torch.int64 )
+        targets['iscrowd'] = iscrowd
+
+        # Compute the area of all bounding boxes
+        # all hail vectorized operations
+        area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
+        targets['area'] = area
+
+        # image ids are just the index, make a 1-D tensor
+        image_id = torch.tensor([idx])
+        targets['image_id'] = image_id
+
+        # Apply transforms, if any
+        if self.transforms is not None:
+            img, targets = self.transforms(img, targets)
+        
+        return img, targets
+    
+
+    def __len__(self) -> int:
+        return len(self.img_list)
+
+
+
 def parse():
     parser = argparse.ArgumentParser()
 
@@ -205,9 +314,9 @@ def plot_stats(args: Any, train_losses: List, val_losses: List, misclfs: List):
 
 
 if __name__ == '__main__':
-    dataset = DroneDataset('VisDrone2019-DET-train.zip', None)
-    loader = DataLoader(dataset, batch_size=2, shuffle=True, collate_fn=collate_fn)
-    for img, targets in loader:
-        # print(img)
-        print(targets)
-        break
+    root = 'data/PennFudanPed.zip'
+    ds = PennFudanDataset(root)
+    img, target = ds[0]
+    plt.imshow( img.permute(1,2,0) )
+    plt.show()
+    print(target)
