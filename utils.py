@@ -16,7 +16,7 @@ from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 
 import torchvision.transforms as T
-from vision.references.detection import transforms as T_
+import transforms as T_
 
 
 
