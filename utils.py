@@ -252,7 +252,7 @@ def parse():
 def get_dataset(root: str, transforms: Optional[Callable] = None) -> Dataset:
     if not os.path.exists(root):
         raise ValueError(f'Data root: {root} does not exist')
-    dataset = DroneDataset(root, transforms)
+    dataset = PennFudanDataset(root, transforms)
     return dataset
 
 
