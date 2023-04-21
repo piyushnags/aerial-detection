@@ -9,14 +9,28 @@ import argparse
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+from PIL import Image, ImageDraw
 
 # PyTorch Imports
 import torch
+import torch.nn as nn
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 
 import torchvision.transforms as T
 import transforms as T_
+
+
+
+class AddNoise():
+    def __init__(self, var=0.1, mean=0.):
+        self.std = var**0.5
+        self.mean = mean
+    
+
+    def __call__(self, x: Tensor, targets: List[Dict]) -> Tensor:
+        x += torch.randn(x.size())*self.std + self.mean
+        return torch.clamp(x, 0, 1), targets
 
 
 
@@ -190,7 +204,8 @@ def get_loaders(args: Any) -> Tuple[DataLoader, DataLoader]:
     augment = None
     if args.aug:
         augment = T_.Compose([
-            T_.RandomHorizontalFlip(0.5)
+            T_.RandomHorizontalFlip(0.5),
+            AddNoise(var=0.05, mean=0.03)
         ])
 
     # Get the dataset
@@ -216,11 +231,24 @@ def collate_fn(batch) -> Tuple:
     return tuple(zip(*batch))
 
 
+def visualize_example(weights: Optional[str] = None):
+    from models import SSDLite
+    model = SSDLite(2)
+    if weights is not None:
+        model.load_state_dict( torch.load(weights, map_location='cpu') )
+    dataset = PennFudanDataset('data/PennFudanPed.zip')
+    img, targets = dataset[0]
+    img = img.permute(1,2,0)
+    pil_img = Image.fromarray( ( img*255 ).numpy().astype(np.uint8) )
+
+    boxes = targets['boxes']
+    draw = ImageDraw.Draw(pil_img)
+    draw.rectangle( tuple(boxes[1]), width=3 )
+
+    plt.imshow( pil_img )
+    plt.show()
+
+
 
 if __name__ == '__main__':
-    root = 'data/PennFudanPed.zip'
-    ds = PennFudanDataset(root)
-    img, target = ds[0]
-    plt.imshow( img.permute(1,2,0) )
-    plt.show()
-    print(target)
+    visualize_example('data/model.pth')
