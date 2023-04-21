@@ -19,6 +19,7 @@ from torch.utils.data import DataLoader, Dataset
 
 import torchvision.transforms as T
 import transforms as T_
+from models import SSDLite
 
 
 
@@ -168,6 +169,8 @@ def parse():
     parser.add_argument('--num_batches', type=int, default=33, help='Total training batches for training and validation split as 90/10')
     parser.add_argument('--num_workers', type=int, default=2, help='number of worker threads for the dataloaders. Beware of Multiprocessing bugs')
     parser.add_argument('--aug', action='store_true', help='Flag to enable augmentation with Gaussian noise')
+    parser.add_argument('--noise_var', type=float, default=0.4, help='Variance of Gaussian noise added during traning (with augmentation)')
+    parser.add_argument('--noise_mean', type=float, default=0.3, help='Mean of Gaussian noise added during traning (with augmentation)')
 
     # General parameters
     parser.add_argument('--save_dir', type=str, default='results')
@@ -205,7 +208,7 @@ def get_loaders(args: Any) -> Tuple[DataLoader, DataLoader]:
     if args.aug:
         augment = T_.Compose([
             T_.RandomHorizontalFlip(0.5),
-            AddNoise(var=0.05, mean=0.03)
+            AddNoise(var=args.noise_var, mean=args.noise_mean)
         ])
 
     # Get the dataset
@@ -231,24 +234,64 @@ def collate_fn(batch) -> Tuple:
     return tuple(zip(*batch))
 
 
-def visualize_example(weights: Optional[str] = None):
-    from models import SSDLite
+def visualize_example(idx: int, weights: Optional[str] = None):
+    # Load model and set to eval mode for inference
     model = SSDLite(2)
+    model.eval()
+    
+    # Load weights if provided
     if weights is not None:
         model.load_state_dict( torch.load(weights, map_location='cpu') )
-    dataset = PennFudanDataset('data/PennFudanPed.zip')
-    img, targets = dataset[0]
+    
+    # Compose transform for adding noise
+    augment = T_.Compose([
+        AddNoise(0.2, 0.2)
+    ])
+
+    # Generate a noise-free sample for visualization and
+    # the noisy sample for inference
+    dataset = PennFudanDataset('data/PennFudanPed.zip', augment)
+    d_ = PennFudanDataset('data/PennFudanPed.zip')
+    i_, _ = d_[idx]
+    img, targets = dataset[idx]
+
+    # Generate predictions
+    with torch.no_grad():
+        preds = model( img.unsqueeze(0) )
+
     img = img.permute(1,2,0)
+
+    plt.figure()
+    plt.imshow( i_.permute(1,2,0) )
+    plt.axis('off')
+
+    plt.figure()
     pil_img = Image.fromarray( ( img*255 ).numpy().astype(np.uint8) )
 
-    boxes = targets['boxes']
+    # Get predicted boxes and initialize PIL ImageDraw object
+    boxes = preds[0]['boxes']
     draw = ImageDraw.Draw(pil_img)
-    draw.rectangle( tuple(boxes[1]), width=3 )
+
+    # Count the number of valid boxes
+    count = torch.sum( torch.where(preds[0]['scores'] > 0.35, 1, 0) )
+    
+    # Draw GT boxes 
+    for box in targets['boxes']:
+        draw.rectangle( tuple(box), width=3, outline='red' )
+
+    # Draw predicted boxes
+    for box in boxes[:count]:
+        draw.rectangle( tuple(box), width=3, outline='green' )
 
     plt.imshow( pil_img )
+    plt.axis('off')
     plt.show()
 
 
 
 if __name__ == '__main__':
-    visualize_example('data/model.pth')
+    torch.manual_seed(2023)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--idx', type=int, default=0)
+    args = parser.parse_args()
+    visualize_example(args.idx, 'data/high.pth')
