@@ -20,97 +20,17 @@ import transforms as T_
 
 
 
-class DroneDataset(Dataset):
-    def __init__(self, root: str, transforms: Optional[Callable] = None):
-        super(DroneDataset, self).__init__()
-
-        fd = open(root, 'rb')
-        zip_content = fd.read()
-        fd.close()
-        self.zip_file = ZipFile( BytesIO(zip_content), 'r' )
-
-        img_prefix = 'VisDrone2019-DET-train/images/'
-        img_list = (
-            list(filter( 
-                lambda x: x[:len(img_prefix)] == img_prefix and x[-4:] == '.jpg',
-                self.zip_file.namelist() 
-            ))
-        )
-
-        ann_prefix = 'VisDrone2019-DET-train/annotations/'
-        ann_list = (
-            list(filter( 
-                lambda x: x[:len(ann_prefix)] == ann_prefix and x[-4:] == '.txt',
-                self.zip_file.namelist() 
-            ))
-        )
-
-        for img, ann in zip(img_list, ann_list):
-            if img[len(img_prefix):-4] != ann[len(ann_prefix):-4]:
-                raise RuntimeError('Images and Annotations are not sorted in the correct order')
-        
-        self.img_list = img_list
-        self.ann_list = ann_list
-
-        self.transforms = transforms
-        self.preprocess = T.Compose([
-            T.ToTensor(),
-        ])
-        self.eps = 1e-2
-    
-
-    def __getitem__(self, idx: int) -> Tuple[List[Tensor], List[Dict[str, Tensor]]]:
-        img_path = self.img_list[idx]
-        ann_path = self.ann_list[idx]
-
-        img_buf = self.zip_file.read(name=img_path)
-        img = cv2.imdecode(np.frombuffer(img_buf, dtype=np.uint8), cv2.IMREAD_COLOR)
-        img = self.preprocess( cv2.cvtColor(img, cv2.COLOR_BGR2RGB) )
-
-        targets = {}
-        boxes = []
-        labels = []
-        scores = []
-
-        with self.zip_file.open(ann_path) as fd:
-            for line in fd:
-                line = line.decode(encoding='utf-8').split(',')
-                try:
-                    x1, y1, w, h, score, label, _, _ = line[:8]
-                except ValueError:
-                    print(line)
-                    sys.exit(1)
-                x1, y1, w, h, score, label = int(x1), int(y1), int(w), int(h), int(score), int(label)
-                x2 = x1 + w + self.eps
-                y2 = y1 + h + self.eps
-                boxes.append( [x1, y1, x2, y2] )
-                labels.append(label)
-                scores.append(score)
-        
-        targets['boxes'] = torch.as_tensor(boxes)
-        targets['labels'] = torch.as_tensor(labels)
-        targets['scores'] = torch.as_tensor(scores)
-
-        if self.transforms is not None:
-            img, targets = self.transforms(img, targets)
-        
-        return img, targets
-    
-
-    def __len__(self) -> int:
-        return len(self.img_list)
-
-
-
 class PennFudanDataset(Dataset):
     def __init__(self, root: str, transforms: Optional[Callable] = None):
         super(PennFudanDataset, self).__init__()
 
+        # Read the contents of zip file into memory
         fd = open(root, 'rb')
         zip_content = fd.read()
         fd.close()
         self.zip_file = ZipFile( BytesIO(zip_content), 'r' )
 
+        # Get filepaths of images from image sub-dir
         img_prefix = 'PennFudanPed/PNGImages/'
         img_list = (
             list(filter( 
@@ -119,6 +39,7 @@ class PennFudanDataset(Dataset):
             ))
         )
 
+        # Get filepaths of annotations from image sub-dir
         ann_prefix = 'PennFudanPed/Annotation/'
         ann_list = (
             list(filter( 
@@ -127,6 +48,7 @@ class PennFudanDataset(Dataset):
             ))
         )
 
+        # Sanity check to make sure images and annotations aren't mixed up
         for img, ann in zip(img_list, ann_list):
             if img[len(img_prefix):-4] != ann[len(ann_prefix):-4]:
                 raise RuntimeError('Images and Annotations are not sorted in the correct order')
@@ -135,6 +57,9 @@ class PennFudanDataset(Dataset):
         self.ann_list = ann_list
 
         self.transforms = transforms
+        
+        # SSDLite model takes care of most of the preprocessing
+        # so just convert image to tensor
         self.preprocess = T.Compose([
             T.ToTensor(),
         ])
@@ -250,66 +175,45 @@ def parse():
 
 
 def get_dataset(root: str, transforms: Optional[Callable] = None) -> Dataset:
+    # Check if root dir exists
     if not os.path.exists(root):
         raise ValueError(f'Data root: {root} does not exist')
+    
+    # Initialize dataset object and return handle
     dataset = PennFudanDataset(root, transforms)
     return dataset
 
 
 def get_loaders(args: Any) -> Tuple[DataLoader, DataLoader]:
+    # By default, no augmentation
+    # Currently, only flips are supported when applying augmentation
     augment = None
     if args.aug:
         augment = T_.Compose([
             T_.RandomHorizontalFlip(0.5)
         ])
+
+    # Get the dataset
     dataset = get_dataset(args.data_dir, augment)
     
+    # Create a 10:1 split on training/val data
     val_batches = (args.num_batches // 11) * args.batch_size
     train_batches = (args.num_batches - (args.num_batches // 11) ) * args.batch_size    
     train_data, val_data, _ = torch.utils.data.random_split(
         dataset, [train_batches, val_batches, len(dataset) - args.batch_size*args.num_batches]
     )
 
+    # Create dataloaders, training data is shuffled
+    # TODO: Add code to implement cross-validation
     train_loader = DataLoader(train_data, args.batch_size, shuffle=True, num_workers=args.num_workers, collate_fn=collate_fn, pin_memory=args.pin)
     val_loader = DataLoader(val_data, args.batch_size, num_workers=args.num_workers, collate_fn=collate_fn, pin_memory=args.pin)
 
+    # Return the training and validation loaders
     return train_loader, val_loader
 
 
 def collate_fn(batch) -> Tuple:
     return tuple(zip(*batch))
-
-
-def plot_stats(args: Any, train_losses: List, val_losses: List, misclfs: List):
-    
-    # FIXME: Enable val losses and misclfs after fixes in evaluate
-    # func in train.py
-    plt.figure(figsize=(12,12))
-    n = len(train_losses) + 1
-    plt.plot( list(range(1, n)), train_losses )
-    plt.plot( list(range(1, n)), val_losses )
-    plt.title('Loss vs Epcohs')
-    plt.xlabel('Epochs')
-    plt.ylabel('Loss')
-    
-    # FIXME: Uncomment following line after fixes
-    plt.legend(['Training', 'Validation'])
-    plt.legend(['Training'])
-
-    if not os.path.exists(args.save_dir):
-        os.makedirs(args.save_dir)
-    
-    plt.savefig( os.path.join(args.save_dir, 'loss.png'), dpi='figure' )
-    plt.show()
-
-    plt.figure(figsize=(12,12))
-    plt.plot( list(range(1,n)), misclfs )
-    plt.title('Avg. Misclassifications vs Epochs')
-    plt.xlabel('Epochs')
-    plt.ylabel('Avg. Misclassifications')
-    plt.legend(['Misclfs'])
-
-    plt.savefig( os.path.join(args.save_dir, 'misclfs.png'), dpi='figure' )
 
 
 
