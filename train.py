@@ -54,7 +54,7 @@ def train(args: Any, model: nn.Module, train_loader: DataLoader, val_loader: Dat
     for epoch in range(1, epochs+1):
         train_one_epoch(model, optimizer, train_loader, device, epoch, print_freq=args.print_freq)
         scheduler.step()
-        evaluate(model, val_loader, device)
+        # evaluate(model, val_loader, device)
 
         # Save checkpoints
         if epoch % args.log_interval == 0:
