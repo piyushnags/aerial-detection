@@ -299,7 +299,8 @@ def get_dataset(root: str, transforms: Optional[Callable] = None) -> Dataset:
         raise ValueError(f'Data root: {root} does not exist')
     
     # Initialize dataset object and return handle
-    dataset = PennFudanDataset(root, transforms)
+    # dataset = PennFudanDataset(root, transforms)
+    dataset = DroneFaceDataset(root, '../drive/MyDrive/Research/annotations.csv', transforms)
     return dataset
 
 
