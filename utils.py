@@ -281,6 +281,7 @@ def parse():
     parser.add_argument('--device', type=str, default='cpu', help='Device to train on')
     parser.add_argument('--pin', action='store_true', default='Flag to enable memory pinning for faster training')
     parser.add_argument('--visualize', action='store_true', help='flag to visualize some results')
+    parser.add_argument('--ann_path', type=str, default='../drive/MyDrive/Research/annotations.csv', help='path to annotations')
 
     # Evaluate Existing Model
     parser.add_argument('--eval_pth', action='store_true', help='Evaluate model from a .pth file')
@@ -290,18 +291,20 @@ def parse():
     parser.add_argument('--use_pretrained', action='store_true', help='Uses pretrained Imagenet weights for MobileNetv3 backbone')
     parser.add_argument('--num_classes', type=int, default=12, help='Number of classes for the Classification Head')
 
+    # Flags
+    parser.add_argument('--fudan', action='store_true', help='Flag to enable training with PennFudan Dataset')
+
     args = parser.parse_args()
     return args
 
 
-def get_dataset(root: str, transforms: Optional[Callable] = None) -> Dataset:
-    # Check if root dir exists
-    if not os.path.exists(root):
-        raise ValueError(f'Data root: {root} does not exist')
-    
+def get_dataset(root: str, ann_path: Optional[str] = '', transforms: Optional[Callable] = None) -> Dataset:    
     # Initialize dataset object and return handle
-    # dataset = PennFudanDataset(root, transforms)
-    dataset = DroneFaceDataset(root, '../drive/MyDrive/Research/annotations.csv', transforms)
+    
+    if args.fudan:
+        dataset = PennFudanDataset(root, transforms)
+    else:
+        dataset = DroneFaceDataset(root, ann_path=args.ann_path, transforms=transforms)
     return dataset
 
 
