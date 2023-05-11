@@ -304,7 +304,7 @@ def get_dataset(root: str, ann_path: Optional[str] = '', transforms: Optional[Ca
     if not ann_path:
         dataset = PennFudanDataset(root, transforms)
     else:
-        dataset = DroneFaceDataset(root, ann_path=args.ann_path, transforms=transforms)
+        dataset = DroneFaceDataset(root, ann_path=ann_path, transforms=transforms)
     return dataset
 
 
