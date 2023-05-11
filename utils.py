@@ -151,6 +151,108 @@ class PennFudanDataset(Dataset):
 
 
 
+class DroneFaceDataset(Dataset):
+    def __init__(self, data_root: str, ann_path: str, transforms: Optional[Callable] = None):
+        super(DroneFaceDataset, self).__init__()
+
+        # Check if root path exists
+        if not os.path.exists(data_root):
+            raise ValueError(f"Path {data_root} does not exist!")
+        
+        # Check if annotations path is valid
+        if not os.path.exists(ann_path):
+            raise ValueError(f"Annotation path {ann_path} is invalid!")
+
+        # Read zipped images into memory
+        with open(data_root, 'rb') as fd:
+            zip_content = fd.read()
+        self.zip_file = ZipFile(BytesIO(zip_content), 'r')
+
+        # Get filepaths of images from image sub-dir
+        img_prefix = 'droneface/photos_all/'
+        img_list = (
+            list(filter( 
+                lambda x: x[:len(img_prefix)] == img_prefix and x[-4:] == '.JPG',
+                self.zip_file.namelist() 
+            ))
+        )
+        self.img_list = img_list
+
+        # Get annotations
+        targets = {}
+        with open(ann_path, 'r') as fd:
+            for i, line in enumerate(fd):
+                # Skip headings
+                if i == 0:
+                    continue
+
+                # Get the bounding box from line
+                l = line.split(',')
+                fname, x, y, w, h = l[0], int(l[6].split(':')[-1]), int(l[7].split(':')[-1]), int(l[8].split(':')[-1]), int(l[9].split(':')[-1][:-2])
+                xmin, ymin, xmax, ymax = x, y, x+w, y+h
+                bbox = [xmin, ymin, xmax, ymax]
+
+                # Check if file already exists in targets dict
+                # If it exists, append bbox, else add as new
+                if fname not in targets:
+                    targets[fname] = [bbox]
+                else:
+                    targets[fname].append(bbox)
+        
+                
+        self.targets = targets
+        self.transforms = transforms
+        self.preprocess = T.Compose([
+            T.ToTensor()
+        ])
+
+
+    def __getitem__(self, idx: int) -> Tuple[ List[Tensor], List[Dict[str, Tensor]] ]:
+        fname = self.img_list[idx]
+
+        # Read the image in RGB format
+        img_buf = self.zip_file.read(name=fname)
+        img = cv2.imdecode(np.frombuffer(img_buf, dtype=np.uint8), cv2.IMREAD_COLOR)
+        img = self.preprocess( cv2.cvtColor(img, cv2.COLOR_BGR2RGB) )
+
+        targets = {}
+        boxes = self.targets[fname]
+
+        # Convert bboxes to torch tensors
+        boxes = torch.as_tensor(boxes, dtype=torch.float32)
+        targets['boxes'] = boxes
+
+        # Only 1 class, so initialize all objects with 1
+        # 0 is for background class
+        labels = torch.ones( (len(boxes),), dtype=torch.int64 )
+        targets['labels'] = labels
+
+        # Ignore crowds, irrelevant for the purpose of this project
+        # Initialize it with zeros
+        iscrowd = torch.zeros( (len(boxes),), dtype=torch.int64 )
+        targets['iscrowd'] = iscrowd
+
+        # Compute the area of all bounding boxes
+        # all hail vectorized operations
+        area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
+        targets['area'] = area
+
+        # image ids are just the index, make a 1-D tensor
+        image_id = torch.tensor([idx])
+        targets['image_id'] = image_id
+
+        # Apply transforms, if any
+        if self.transforms is not None:
+            img, targets = self.transforms(img, targets)
+        
+        return img, targets
+    
+
+    def __len__(self) -> int:
+        return len(self.img_list)
+
+
+
 def parse():
     parser = argparse.ArgumentParser()
 
@@ -245,7 +347,7 @@ def visualize_example(idx: int, weights: Optional[str] = None):
     
     # Compose transform for adding noise
     augment = T_.Compose([
-        AddNoise(0.2, 0.2)
+        AddNoise(0.5, 0.3)
     ])
 
     # Generate a noise-free sample for visualization and
@@ -273,7 +375,7 @@ def visualize_example(idx: int, weights: Optional[str] = None):
     draw = ImageDraw.Draw(pil_img)
 
     # Count the number of valid boxes
-    count = torch.sum( torch.where(preds[0]['scores'] > 0.35, 1, 0) )
+    count = torch.sum( torch.where(preds[0]['scores'] > 0.4, 1, 0) )
     
     # Draw GT boxes 
     for box in targets['boxes']:
@@ -294,4 +396,4 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--idx', type=int, default=0)
     args = parser.parse_args()
-    visualize_example(args.idx, 'data/high.pth')
+    visualize_example(args.idx, 'data/vhigh.pth')
