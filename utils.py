@@ -216,7 +216,8 @@ class DroneFaceDataset(Dataset):
         img = self.preprocess( cv2.cvtColor(img, cv2.COLOR_BGR2RGB) )
 
         targets = {}
-        boxes = self.targets[fname]
+        k = fname.split('/')[-1]
+        boxes = self.targets[k]
 
         # Convert bboxes to torch tensors
         boxes = torch.as_tensor(boxes, dtype=torch.float32)
