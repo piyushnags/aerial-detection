@@ -301,7 +301,7 @@ def parse():
 def get_dataset(root: str, ann_path: Optional[str] = '', transforms: Optional[Callable] = None) -> Dataset:    
     # Initialize dataset object and return handle
     
-    if args.fudan:
+    if not ann_path:
         dataset = PennFudanDataset(root, transforms)
     else:
         dataset = DroneFaceDataset(root, ann_path=args.ann_path, transforms=transforms)
@@ -319,7 +319,10 @@ def get_loaders(args: Any) -> Tuple[DataLoader, DataLoader]:
         ])
 
     # Get the dataset
-    dataset = get_dataset(args.data_dir, augment)
+    if args.fudan:
+        dataset = get_dataset(args.data_dir, transforms=augment)
+    else:
+        dataset = get_dataset(args.data_dir, ann_path=args.ann_path, transforms=augment)
     
     # Create a 10:1 split on training/val data
     val_batches = (args.num_batches // 11) * args.batch_size
