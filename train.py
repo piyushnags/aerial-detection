@@ -81,12 +81,12 @@ if __name__ == '__main__':
 
         # Initialize model
         model = SSDLite(num_classes=args.num_classes, pretrained=args.use_pretrained)
-        # for p in model.parameters():
-        #     p.requires_grad_(False)
+        for p in model.parameters():
+            p.requires_grad_(False)
         
-        # for child in model.model.head.children():
-        #     for p in child.parameters():
-        #         p.requires_grad_(True)
+        for child in model.model.head.children():
+            for p in child.parameters():
+                p.requires_grad_(True)
 
 
         # Call training function
