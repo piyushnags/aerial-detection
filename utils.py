@@ -177,31 +177,10 @@ class DroneFaceDataset(Dataset):
             ))
         )
         self.img_list = img_list
+
+        # Save annotation file path
         self.ann_path = ann_path
 
-        # # Get annotations
-        # targets = {}
-        # with open(ann_path, 'r') as fd:
-        #     for i, line in enumerate(fd):
-        #         # Skip headings
-        #         if i == 0:
-        #             continue
-
-        #         # Get the bounding box from line
-        #         l = line.split(',')
-        #         fname, x, y, w, h = l[0], int(l[6].split(':')[-1]), int(l[7].split(':')[-1]), int(l[8].split(':')[-1]), int(l[9].split(':')[-1][:-2])
-        #         xmin, ymin, xmax, ymax = x, y, x+w, y+h
-        #         bbox = [xmin, ymin, xmax, ymax]
-
-        #         # Check if file already exists in targets dict
-        #         # If it exists, append bbox, else add as new
-        #         if fname not in targets:
-        #             targets[fname] = [bbox]
-        #         else:
-        #             targets[fname].append(bbox)
-        
-                
-        # self.targets = targets
         self.transforms = transforms
         self.preprocess = T.Compose([
             T.ToTensor()
@@ -217,27 +196,34 @@ class DroneFaceDataset(Dataset):
         img = self.preprocess( cv2.cvtColor(img, cv2.COLOR_BGR2RGB) )
 
         targets = {}
+        # Filename without full path
         k = fname.split('/')[-1]
-        # boxes = self.targets[k]
         boxes = []
+
+        # max boxes for this image
         num_boxes = None
         c = 0
         with open(self.ann_path, 'r') as fd:
             for i, line in enumerate(fd):
+                # Skip headings
                 if i == 0:
                     continue
 
+                # matching image title 
                 if line[:len(k)] == k:
                     l = line.split(',')
                     x, y, w, h = int(l[6].split(':')[-1]), int(l[7].split(':')[-1]), int(l[8].split(':')[-1]), int(l[9].split(':')[-1][:-2])
                     xmin, ymin, xmax, ymax = x, y, x+w, y+h
                     bbox = [xmin, ymin, xmax, ymax]
                     boxes.append(bbox)
+                    
+                    # increment region count
                     c += 1
 
                     if num_boxes is None:
                         num_boxes = int(l[3])
 
+                # break loop once all bboxes are found
                 if num_boxes is not None and c == num_boxes:
                     break                    
 
@@ -386,8 +372,10 @@ def visualize_example(idx: int, weights: Optional[str] = None):
     # the noisy sample for inference
     dataset = PennFudanDataset('data/PennFudanPed.zip', augment)
     d_ = PennFudanDataset('data/PennFudanPed.zip')
+
     # dataset = DroneFaceDataset('data/droneface.zip', 'data/droneface/annotations.csv', augment)
     # d_ = DroneFaceDataset('data/droneface.zip', 'data/droneface/annotations.csv')
+
     i_, _ = d_[idx]
     img, targets = dataset[idx]
 
@@ -410,7 +398,7 @@ def visualize_example(idx: int, weights: Optional[str] = None):
     draw = ImageDraw.Draw(pil_img)
 
     # Count the number of valid boxes
-    count = torch.sum( torch.where(preds[0]['scores'] > 0.3, 1, 0) )
+    count = torch.sum( torch.where(preds[0]['scores'] > 0.4, 1, 0) )
     
     # Draw GT boxes 
     for box in targets['boxes']:
@@ -431,4 +419,4 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--idx', type=int, default=0)
     args = parser.parse_args()
-    visualize_example(args.idx, 'data/high.pth')
+    visualize_example(args.idx, 'data/vhigh.pth')
