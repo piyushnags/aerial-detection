@@ -377,14 +377,17 @@ def visualize_example(idx: int, weights: Optional[str] = None):
         model.load_state_dict( torch.load(weights, map_location='cpu') )
     
     # Compose transform for adding noise
+    # augment = None
     augment = T_.Compose([
-        AddNoise(0.5, 0.3)
+        AddNoise(0.2, 0.2)
     ])
 
     # Generate a noise-free sample for visualization and
     # the noisy sample for inference
     dataset = PennFudanDataset('data/PennFudanPed.zip', augment)
     d_ = PennFudanDataset('data/PennFudanPed.zip')
+    # dataset = DroneFaceDataset('data/droneface.zip', 'data/droneface/annotations.csv', augment)
+    # d_ = DroneFaceDataset('data/droneface.zip', 'data/droneface/annotations.csv')
     i_, _ = d_[idx]
     img, targets = dataset[idx]
 
@@ -403,10 +406,11 @@ def visualize_example(idx: int, weights: Optional[str] = None):
 
     # Get predicted boxes and initialize PIL ImageDraw object
     boxes = preds[0]['boxes']
+    print(preds[0]['scores'])
     draw = ImageDraw.Draw(pil_img)
 
     # Count the number of valid boxes
-    count = torch.sum( torch.where(preds[0]['scores'] > 0.4, 1, 0) )
+    count = torch.sum( torch.where(preds[0]['scores'] > 0.3, 1, 0) )
     
     # Draw GT boxes 
     for box in targets['boxes']:
@@ -427,4 +431,4 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--idx', type=int, default=0)
     args = parser.parse_args()
-    visualize_example(args.idx, 'data/vhigh.pth')
+    visualize_example(args.idx, 'data/high.pth')

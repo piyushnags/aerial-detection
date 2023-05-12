@@ -54,7 +54,7 @@ def train(args: Any, model: nn.Module, train_loader: DataLoader, val_loader: Dat
     for epoch in range(1, epochs+1):
         train_one_epoch(model, optimizer, train_loader, device, epoch, print_freq=args.print_freq)
         scheduler.step()
-        # evaluate(model, val_loader, device)
+        evaluate(model, val_loader, device)
 
         # Save checkpoints
         if epoch % args.log_interval == 0:
@@ -81,12 +81,12 @@ if __name__ == '__main__':
 
         # Initialize model
         model = SSDLite(num_classes=args.num_classes, pretrained=args.use_pretrained)
-        for p in model.parameters():
-            p.requires_grad_(False)
+        # for p in model.parameters():
+        #     p.requires_grad_(False)
         
-        for child in model.model.head.children():
-            for p in child.parameters():
-                p.requires_grad_(True)
+        # for child in model.model.head.children():
+        #     for p in child.parameters():
+        #         p.requires_grad_(True)
 
 
         # Call training function
