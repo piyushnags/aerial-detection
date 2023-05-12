@@ -177,30 +177,31 @@ class DroneFaceDataset(Dataset):
             ))
         )
         self.img_list = img_list
+        self.ann_path = ann_path
 
-        # Get annotations
-        targets = {}
-        with open(ann_path, 'r') as fd:
-            for i, line in enumerate(fd):
-                # Skip headings
-                if i == 0:
-                    continue
+        # # Get annotations
+        # targets = {}
+        # with open(ann_path, 'r') as fd:
+        #     for i, line in enumerate(fd):
+        #         # Skip headings
+        #         if i == 0:
+        #             continue
 
-                # Get the bounding box from line
-                l = line.split(',')
-                fname, x, y, w, h = l[0], int(l[6].split(':')[-1]), int(l[7].split(':')[-1]), int(l[8].split(':')[-1]), int(l[9].split(':')[-1][:-2])
-                xmin, ymin, xmax, ymax = x, y, x+w, y+h
-                bbox = [xmin, ymin, xmax, ymax]
+        #         # Get the bounding box from line
+        #         l = line.split(',')
+        #         fname, x, y, w, h = l[0], int(l[6].split(':')[-1]), int(l[7].split(':')[-1]), int(l[8].split(':')[-1]), int(l[9].split(':')[-1][:-2])
+        #         xmin, ymin, xmax, ymax = x, y, x+w, y+h
+        #         bbox = [xmin, ymin, xmax, ymax]
 
-                # Check if file already exists in targets dict
-                # If it exists, append bbox, else add as new
-                if fname not in targets:
-                    targets[fname] = [bbox]
-                else:
-                    targets[fname].append(bbox)
+        #         # Check if file already exists in targets dict
+        #         # If it exists, append bbox, else add as new
+        #         if fname not in targets:
+        #             targets[fname] = [bbox]
+        #         else:
+        #             targets[fname].append(bbox)
         
                 
-        self.targets = targets
+        # self.targets = targets
         self.transforms = transforms
         self.preprocess = T.Compose([
             T.ToTensor()
@@ -217,7 +218,29 @@ class DroneFaceDataset(Dataset):
 
         targets = {}
         k = fname.split('/')[-1]
-        boxes = self.targets[k]
+        # boxes = self.targets[k]
+        boxes = []
+        num_boxes = None
+        c = 0
+        with open(self.ann_path, 'r') as fd:
+            for i, line in enumerate(fd):
+                if i == 0:
+                    continue
+
+                if line[:len(k)] == k:
+                    l = line.split(',')
+                    x, y, w, h = int(l[6].split(':')[-1]), int(l[7].split(':')[-1]), int(l[8].split(':')[-1]), int(l[9].split(':')[-1][:-2])
+                    xmin, ymin, xmax, ymax = x, y, x+w, y+h
+                    bbox = [xmin, ymin, xmax, ymax]
+                    boxes.append(bbox)
+                    c += 1
+
+                    if num_boxes is None:
+                        num_boxes = int(l[3])
+
+                if num_boxes is not None and c == num_boxes:
+                    break                    
+
 
         # Convert bboxes to torch tensors
         boxes = torch.as_tensor(boxes, dtype=torch.float32)
