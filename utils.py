@@ -306,19 +306,33 @@ class WIDERFaceDataset(Dataset):
         self.ann = annotations
     
 
+    '''
+    TODO: Cache the offsets for linebreaks in memory for faster 
+          loading during training
+    '''
     def __getitem__(self, idx) -> Tuple[ List[Tensor], List[Dict[str, Tensor]] ]:
         img_path = self.img_paths[idx]
+        
+        # Extract the part from full file path necessary for 
+        # comparing in the annotation file
         probe = img_path.split('/')
         probe = os.path.join( *probe[2:] )
 
+        # Get all bboxes in the image
         boxes = []
         with open(self.ann, 'r') as fd:
             line = fd.readline()
+
+            # Read until EOF
             while line != '':
+                # Eliminate trailing spaces
                 line = line.strip()
+
+                # Skip if not an image, let's just find the image first
                 if line[-4:] != '.jpg':
                     line = fd.readline()
 
+                # We found the image, parse the bboxes and exit loop
                 elif line == probe:
                     line = fd.readline()
                     line = line.strip()
@@ -334,6 +348,7 @@ class WIDERFaceDataset(Dataset):
 
                     break
 
+                # An image but doesn't match, skip it
                 else:
                     line = fd.readline()
         
@@ -361,7 +376,6 @@ class WIDERFaceDataset(Dataset):
 
         # Compute the area of all bounding boxes
         # all hail vectorized operations
-        print(boxes)
         area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
         targets['area'] = area
 
