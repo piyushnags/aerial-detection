@@ -284,7 +284,18 @@ class WIDERFaceDataset(Dataset):
         
         # Load annotations
         annotations = annotations.replace('train', split)
-        self.img_paths = self._load_paths(annotations)
+        # self.img_paths = self._load_paths(annotations)
+
+        img_paths = []
+        with open(annotations, 'r') as fd:
+            for line in fd:
+                l = line.strip()
+                if l[-4:] != '.jpg':
+                    continue
+                else:
+                    img_paths.append(l)
+        self.img_paths = img_paths
+
         self.transforms = transforms
         
         self.split = split
