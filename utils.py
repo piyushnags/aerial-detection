@@ -451,7 +451,7 @@ def get_loaders(args: Any) -> Tuple[DataLoader, DataLoader]:
     if args.fudan:
         dataset = get_dataset(args.data_dir, transforms=augment)
     elif args.wider:
-        dataset = get_dataset(args.data_dir, ann_path=args.ann_pth, transforms=augment, dset='wider')
+        dataset = get_dataset(args.data_dir, ann_path=args.ann_path, transforms=augment, dset='wider')
         val_dataset = get_dataset(args.data_dir, ann_path=args.ann_path, transforms=augment, dset='wider', split='val')
     else:
         dataset = get_dataset(args.data_dir, ann_path=args.ann_path, transforms=augment, dset='droneface')    
