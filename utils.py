@@ -367,10 +367,10 @@ class WIDERFaceDataset(Dataset):
                 else:
                     offsets.append(offset)
                     img_paths.append(l)
-                    print(l)
 
                 offset += len(line)
 
+        print(len(offsets))
         return img_paths, offsets        
     
 
