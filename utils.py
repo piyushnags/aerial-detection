@@ -291,7 +291,8 @@ class WIDERFaceDataset(Dataset):
         prefix = f'WIDER_{split}/images'
         scenes = os.listdir(prefix)
         for scene in scenes:
-            names = glob( os.path.join(prefix, scene), '*' )
+            tmp = os.path.join(prefix, scene, '*')
+            names = glob( tmp )
             img_paths.append( names )
         
         self.img_paths = list(flatten(img_paths))
