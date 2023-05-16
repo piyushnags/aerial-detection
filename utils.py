@@ -360,12 +360,9 @@ class WIDERFaceDataset(Dataset):
         offsets = []
         with open(ann_path, 'r') as fd:
             offset = 0
-            for line in fd.readline():
+            for line in fd:
                 l = line.strip()
                 if l[-4:] != '.jpg':
-                    print(line)
-                    print(l[-4:])
-                    print('----------------------||||------')
                     continue
                 else:
                     offsets.append(offset)
