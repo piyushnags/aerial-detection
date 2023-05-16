@@ -283,6 +283,7 @@ class WIDERFaceDataset(Dataset):
             raise FileNotFoundError(f"{annotations} is not a valid file path")
         
         # Load annotations
+        annotations = annotations.replace('train', split)
         self.img_paths, self.boxes = self._load_annotations(annotations)
         self.transforms = transforms
         
