@@ -4,7 +4,9 @@ from typing import Callable, Optional, Tuple, List, Dict, Any
 from io import BytesIO
 from zipfile import ZipFile
 import argparse
-from threading import Lock
+
+# Data Imports
+from pandas.core.common import flatten
 
 # Image Processing and CV Imports
 import cv2
@@ -274,7 +276,7 @@ class WIDERFaceDataset(Dataset):
         
         # Check if data_dir is valid and save the dir path
         if not os.path.exists(data_dir):
-            raise FileNotFoundError(f"{data_dir} is not a valid ZipFile containing datset")
+            raise NotADirectoryError(f"{data_dir} is not a valid Dataset Directory")
         
         data_dir = data_dir.replace('train', split)
         self.data_dir = data_dir
@@ -283,25 +285,26 @@ class WIDERFaceDataset(Dataset):
         if not os.path.exists(annotations):
             raise FileNotFoundError(f"{annotations} is not a valid file path")
         
+        # Save image paths
+        img_paths = []
+        prefix = f'WIDER_{split}/images'
+        scenes = os.listdir(prefix)
+        for scene in scenes:
+            img_paths.append( os.listdir( os.path.join(prefix, scene) ) )
+        
+        self.img_paths = list(flatten(img_paths))
+        
         # Load annotations
         annotations = annotations.replace('train', split)
-        # self.img_paths = list(filter(lambda x: x[-4:] == '.jpg', ZipFile(data_dir).namelist()))
-        self.zf = ZipFile(data_dir)
         self.transforms = transforms
         
         # Save split and ann file path
         self.split = split
         self.ann = annotations
-
-        # Lock for multithreading
-        self.lock = Lock()
     
 
     def __getitem__(self, idx) -> Tuple[ List[Tensor], List[Dict[str, Tensor]] ]:
-        with self.lock:
-            img_paths = list( filter(lambda x: x[-4:] == '.jpg', self.zf.namelist()) )
-            img_path = img_paths[idx]
-            print(img_path)
+        img_path = self.img_paths[idx]
 
         with open(self.ann, 'r') as fd:
             line = fd.readline()
@@ -330,13 +333,7 @@ class WIDERFaceDataset(Dataset):
                     line = fd.readline()
         
         # Get the image as a torch tensor
-        # prefix = f'WIDER_{self.split}/images/'
-        # img_path = os.path.join(prefix, img_path)
-
-        with ZipFile(img_path, 'r') as archive:
-            with archive.open(img_path) as fd:
-                img = Image.open(fd).convert('RGB')
-            
+        img = Image.open(img_path).convert('RGB')
         to_tensor = T.ToTensor()
         img = to_tensor(img)
 
