@@ -366,7 +366,7 @@ class WIDERFaceDataset(Dataset):
                 l = line.strip()
                 if l[-4:] != '.jpg':
                     print(l[-4:])
-                    continue
+                    break
                 else:
                     offsets.append(offset)
                     img_paths.append(l)
