@@ -293,6 +293,8 @@ class WIDERFaceDataset(Dataset):
 
     def __getitem__(self, idx) -> Tuple[List[Tensor], List[Dict[str, Tensor]]]:
         img_path, offset = self.img_paths[idx], self.offsets[idx]
+        print(f"offset info: {len(offset)}")
+        print(f"Offsets list info: {len(self.offsets)}")
 
         with open(self.ann, 'r') as fd:
             fd.seek(offset)
@@ -367,8 +369,6 @@ class WIDERFaceDataset(Dataset):
                 else:
                     offsets.append(offset)
                     img_paths.append(l)
-                    if offset == 0:
-                        print(offsets)
 
                 offset += len(line)
 
