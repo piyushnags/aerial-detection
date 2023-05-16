@@ -365,7 +365,7 @@ class WIDERFaceDataset(Dataset):
             for line in fd.readline():
                 l = line.strip()
                 if l[-4:] != '.jpg':
-                    print(l)
+                    print(line)
                     print(l[-4:])
                     break
                 else:
