@@ -293,6 +293,7 @@ class WIDERFaceDataset(Dataset):
             img_paths.append( os.listdir( os.path.join(prefix, scene) ) )
         
         self.img_paths = list(flatten(img_paths))
+        self.prefix = prefix
         
         # Load annotations
         annotations = annotations.replace('train', split)
@@ -333,6 +334,7 @@ class WIDERFaceDataset(Dataset):
                     line = fd.readline()
         
         # Get the image as a torch tensor
+        img_path = os.path.join(self.prefix, img_path)
         img = Image.open(img_path).convert('RGB')
         to_tensor = T.ToTensor()
         img = to_tensor(img)
