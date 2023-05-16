@@ -285,7 +285,7 @@ class WIDERFaceDataset(Dataset):
         # Load annotations
         annotations = annotations.replace('train', split)
         # self.img_paths = self._load_paths(annotations)
-        self.img_paths = filter(lambda x: x[-4:] == '.jpg', ZipFile(data_dir).namelist())
+        self.img_paths = list(filter(lambda x: x[-4:] == '.jpg', ZipFile(data_dir).namelist()))
 
 
         self.transforms = transforms
