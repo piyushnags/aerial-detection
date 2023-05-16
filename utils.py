@@ -4,6 +4,7 @@ from typing import Callable, Optional, Tuple, List, Dict, Any
 from io import BytesIO
 from zipfile import ZipFile
 import argparse
+from threading import Lock
 
 # Image Processing and CV Imports
 import cv2
@@ -287,13 +288,18 @@ class WIDERFaceDataset(Dataset):
         self.img_paths = list(filter(lambda x: x[-4:] == '.jpg', ZipFile(data_dir).namelist()))
         self.transforms = transforms
         
+        # Save split and ann file path
         self.split = split
         self.ann = annotations
+
+        # Lock for multithreading
+        self.lock = Lock()
     
 
     def __getitem__(self, idx) -> Tuple[ List[Tensor], List[Dict[str, Tensor]] ]:
-        img_path = self.img_paths[idx][0]
-        print(img_path)
+        with self.lock:
+            img_path = self.img_paths[idx]
+            print(img_path)
 
         with open(self.ann, 'r') as fd:
             line = fd.readline()
