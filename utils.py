@@ -293,6 +293,8 @@ class WIDERFaceDataset(Dataset):
 
     def __getitem__(self, idx) -> Tuple[List[Tensor], List[Dict[str, Tensor]]]:
         img_path = self.img_paths[idx]
+        print(img_path)
+        print(len(self.img_paths))
 
         with open(self.ann, 'r') as fd:
             line = fd.readline()
