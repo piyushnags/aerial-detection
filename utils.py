@@ -285,16 +285,8 @@ class WIDERFaceDataset(Dataset):
         # Load annotations
         annotations = annotations.replace('train', split)
         # self.img_paths = self._load_paths(annotations)
+        self.img_paths = filter(lambda x: x[-4:] == '.jpg', ZipFile(data_dir).namelist())
 
-        img_paths = []
-        with open(annotations, 'r') as fd:
-            for line in fd:
-                l = line.strip()
-                if l[-4:] != '.jpg':
-                    continue
-                else:
-                    img_paths.append(l)
-        self.img_paths = img_paths
 
         self.transforms = transforms
         
@@ -304,8 +296,6 @@ class WIDERFaceDataset(Dataset):
 
     def __getitem__(self, idx) -> Tuple[List[Tensor], List[Dict[str, Tensor]]]:
         img_path = self.img_paths[idx]
-        print(self.img_paths[idx])
-        print(len(self.img_paths))
 
         with open(self.ann, 'r') as fd:
             line = fd.readline()
