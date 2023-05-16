@@ -365,13 +365,12 @@ class WIDERFaceDataset(Dataset):
             for line in fd.readline():
                 l = line.strip()
                 if l[-4:] != '.jpg':
+                    print(l[-4:])
                     continue
                 else:
                     offsets.append(offset)
                     img_paths.append(l)
 
-                if offset == 0:
-                    print(l[-4:])
                 offset += len(line)
 
         return img_paths, offsets        
