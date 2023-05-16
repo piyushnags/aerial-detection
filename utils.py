@@ -294,7 +294,7 @@ class WIDERFaceDataset(Dataset):
     def __getitem__(self, idx) -> Tuple[List[Tensor], List[Dict[str, Tensor]]]:
         img_path = self.img_paths[idx]
         offset = (self.offsets)[idx]
-        print(type(offset))
+        print(type(offset[0]))
 
         with open(self.ann, 'r') as fd:
             fd.seek(offset)
