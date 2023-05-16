@@ -284,14 +284,32 @@ class WIDERFaceDataset(Dataset):
         
         # Load annotations
         annotations = annotations.replace('train', split)
-        self.img_paths, self.boxes = self._load_annotations(annotations)
+        self.img_paths, self.offsets = self._load_paths(annotations)
         self.transforms = transforms
         
         self.split = split
+        self.ann = annotations
     
 
     def __getitem__(self, idx) -> Tuple[List[Tensor], List[Dict[str, Tensor]]]:
-        img_path, boxes = self.img_paths[idx], self.boxes[idx]
+        img_path, offset = self.img_paths[idx], self.offsets[idx]
+
+        with open(self.ann, 'r') as fd:
+            fd.seek(offset)
+            fd.readline()
+            
+            line = fd.readline()
+            line = line.strip()
+            num_boxes = int(line)
+
+            boxes = []
+            for _ in range(num_boxes):
+                line = fd.readline()
+                line = line.strip()
+                line = line.split(" ")
+                x, y, w, h = map(float, line[:4])
+                xmin, ymin, xmax, ymax = x, y, x+w, y+h
+                boxes.append([xmin, ymin, xmax, ymax])
         
         # Get the image as a torch tensor
         prefix = f'WIDER_{self.split}/images/'
@@ -336,43 +354,23 @@ class WIDERFaceDataset(Dataset):
         return img, targets
     
 
-    def _load_annotations(self, ann_path) -> Tuple[List[str], List[List[float]]]:
-        img_paths = []
-        boxes = []
-
+    def _load_paths(self, ann_path: str) -> Tuple[List[str], List[int]]:
         # Read all the lines from ann file
+        img_paths = []
+        offsets = []
         with open(ann_path, 'r') as fd:
-            lines = fd.readlines()
-        
-        curr_line = 0
-        curr_box_count = None
-        while curr_line < len(lines):
-            line = lines[curr_line].strip()
+            offset = 0
+            for line in fd.readline():
+                l = line.strip()
+                if l[-4:] != '.jpg':
+                    continue
+                else:
+                    offsets.append(offset)
+                    img_paths.append(l)
 
-            # Check if curr line is an image
-            if line[-4:] == '.jpg':
-                img_paths.append(line)
-                curr_line += 1
-            
-            # Check if curr line is metadata about no. of bboxes
-            elif line.isnumeric():
-                curr_box_count = int(line)
-                curr_line += 1
-            
-            # Parse boxes using curr_box_count as ref
-            # Store bboxes in COCO format for easy evaluation
-            else:
-                tmp = []
-                for offset in range(curr_box_count):
-                    l = lines[curr_line + offset].strip()
-                    l = l.split(" ")
-                    x, y, w, h = map(float, l[:4])
-                    xmin, ymin, xmax, ymax = x, y, x+w, y+h
-                    tmp.append([xmin, ymin, xmax, ymax])
-                boxes.append(tmp)
-                curr_line += curr_box_count
-        
-        return img_paths, boxes
+                offset += len(line)
+
+        return img_paths, offsets        
     
 
     def __len__(self) -> int:
