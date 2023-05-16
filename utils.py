@@ -293,8 +293,6 @@ class WIDERFaceDataset(Dataset):
 
     def __getitem__(self, idx) -> Tuple[List[Tensor], List[Dict[str, Tensor]]]:
         img_path, offset = self.img_paths[idx], self.offsets[idx]
-        print(type(offset))
-        print(offset)
 
         with open(self.ann, 'r') as fd:
             fd.seek(offset)
@@ -367,7 +365,8 @@ class WIDERFaceDataset(Dataset):
                 if l[-4:] != '.jpg':
                     print(line)
                     print(l[-4:])
-                    break
+                    print('----------------------||||------')
+                    continue
                 else:
                     offsets.append(offset)
                     img_paths.append(l)
