@@ -294,22 +294,24 @@ class WIDERFaceDataset(Dataset):
     def __getitem__(self, idx) -> Tuple[List[Tensor], List[Dict[str, Tensor]]]:
         img_path, offset = self.img_paths[idx], self.offsets[idx]
 
-        with open(self.ann, 'r') as fd:
-            fd.seek(offset)
-            fd.readline()
-            
+        fd = open(self.ann, 'r')
+        fd.seek(offset)
+        fd.readline()
+        
+        line = fd.readline()
+        line = line.strip()
+        num_boxes = int(line)
+
+        boxes = []
+        for _ in range(num_boxes):
             line = fd.readline()
             line = line.strip()
-            num_boxes = int(line)
-
-            boxes = []
-            for _ in range(num_boxes):
-                line = fd.readline()
-                line = line.strip()
-                line = line.split(" ")
-                x, y, w, h = map(float, line[:4])
-                xmin, ymin, xmax, ymax = x, y, x+w, y+h
-                boxes.append([xmin, ymin, xmax, ymax])
+            line = line.split(" ")
+            x, y, w, h = map(float, line[:4])
+            xmin, ymin, xmax, ymax = x, y, x+w, y+h
+            boxes.append([xmin, ymin, xmax, ymax])
+        
+        fd.close()
         
         # Get the image as a torch tensor
         prefix = f'WIDER_{self.split}/images/'
