@@ -18,7 +18,7 @@ from PIL import Image, ImageDraw
 import torch
 import torch.nn as nn
 from torch import Tensor
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, Subset
 
 import torchvision.transforms as T
 import transforms as T_
@@ -452,7 +452,8 @@ def get_loaders(args: Any) -> Tuple[DataLoader, DataLoader]:
     
     
     if args.wider:
-        train_data, val_data = dataset[:( args.num_batches*args.batch_size )], val_dataset
+        indices = torch.randperm(len(dataset))[:( args.num_batches*args.num_size )]
+        train_data, val_data = Subset(dataset, indices), val_dataset
     
     else:
         # Create a 10:1 split on training/val data
