@@ -5,13 +5,11 @@ import math, sys
 import torch
 import torch.nn as nn
 from torch.optim.lr_scheduler import StepLR
-from torch.optim import Adam, SGD, RMSprop
 import torchvision
 
 # Project Imports
 from models import *
 from utils import *
-from tqdm import tqdm
 from engine import train_one_epoch, evaluate
 
 
@@ -54,7 +52,7 @@ def train(args: Any, model: nn.Module, train_loader: DataLoader, val_loader: Dat
     for epoch in range(1, epochs+1):
         train_one_epoch(model, optimizer, train_loader, device, epoch, print_freq=args.print_freq)
         scheduler.step()
-        # evaluate(model, val_loader, device)
+        evaluate(model, val_loader, device)
 
         # Save checkpoints
         if epoch % args.log_interval == 0:
@@ -81,13 +79,6 @@ if __name__ == '__main__':
 
         # Initialize model
         model = SSDLite(num_classes=args.num_classes, pretrained=args.use_pretrained)
-        # for p in model.parameters():
-        #     p.requires_grad_(False)
-        
-        # for child in model.model.head.children():
-        #     for p in child.parameters():
-        #         p.requires_grad_(True)
-
 
         # Call training function
         train(args, model, train_loader, val_loader)

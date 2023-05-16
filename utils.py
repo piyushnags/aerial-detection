@@ -260,6 +260,121 @@ class DroneFaceDataset(Dataset):
 
     def __len__(self) -> int:
         return len(self.img_list)
+    
+
+
+class WIDERFaceDataset(Dataset):
+    def __init__(self, data_dir: str, annotations: str, transforms: Optional[Callable] = None, split: str = 'train'):
+        super(WIDERFaceDataset, self).__init__()
+
+        # Check if data_dir is valid and save the dir path
+        if not os.path.exists(data_dir):
+            raise FileNotFoundError(f"{data_dir} is not a valid ZipFile containing datset")
+        
+        self.data_dir = data_dir
+
+        # Check if annotation path is valid and save the file path
+        if not os.path.exists(annotations):
+            raise FileNotFoundError(f"{annotations} is not a valid file path")
+        
+        # Load annotations
+        self.img_paths, self.boxes = self._load_annotations(annotations)
+        self.transforms = transforms
+
+        # Dataset split
+        if split not in ['train', 'val', 'test']:
+            raise ValueError(f"{split} is not a valid split")
+        
+        self.split = split
+    
+
+    def __getitem__(self, idx) -> Tuple[List[Tensor], List[Dict[str, Tensor]]]:
+        img_path, boxes = self.img_paths[idx], self.boxes[idx]
+        
+        # Get the image as a torch tensor
+        prefix = f'WIDER_{self.split}/images/'
+        img_path = os.path.join(prefix, img_path)
+
+        with ZipFile(img_path, 'r') as archive:
+            with archive.open(img_path) as fd:
+                img = Image.open(fd).convert('RGB')
+            
+        to_tensor = T.ToTensor()
+        img = to_tensor(img)
+
+        # Initialize targets dict
+        targets = {}
+
+        # Convert bboxes to torch tensors
+        boxes = torch.as_tensor(boxes, dtype=torch.float32)
+        targets['boxes'] = boxes
+
+        # Only 1 class, so initialize all objects with 1
+        # 0 is for background class
+        labels = torch.ones( (len(boxes),), dtype=torch.int64 )
+        targets['labels'] = labels
+
+        # Ignore crowds, irrelevant for the purpose of this project
+        # Initialize it with zeros
+        iscrowd = torch.zeros( (len(boxes),), dtype=torch.int64 )
+        targets['iscrowd'] = iscrowd
+
+        # Compute the area of all bounding boxes
+        # all hail vectorized operations
+        area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
+        targets['area'] = area
+
+        # image ids are just the index, make a 1-D tensor
+        image_id = torch.tensor([idx])
+        targets['image_id'] = image_id
+
+        if self.transforms is not None:
+            img, targets = self.transforms(img, targets)
+
+        return img, targets
+    
+
+    def _load_annotations(self, ann_path) -> Tuple[List[str], List[List[float]]]:
+        img_paths = []
+        boxes = []
+
+        # Read all the lines from ann file
+        with open(ann_path, 'r') as fd:
+            lines = fd.readlines()
+        
+        curr_line = 0
+        curr_box_count = None
+        while curr_line < len(lines):
+            line = lines[curr_line].strip()
+
+            # Check if curr line is an image
+            if line[-4:] == '.jpg':
+                img_paths.append(line)
+                curr_line += 1
+            
+            # Check if curr line is metadata about no. of bboxes
+            elif line.isnumeric():
+                curr_box_count = int(line)
+                curr_line += 1
+            
+            # Parse boxes using curr_box_count as ref
+            # Store bboxes in COCO format for easy evaluation
+            else:
+                tmp = []
+                for offset in range(curr_box_count):
+                    l = lines[curr_line + offset].strip()
+                    l = l.split(" ")
+                    x, y, w, h = map(float, l[:4])
+                    xmin, ymin, xmax, ymax = x, y, x+w, y+h
+                    tmp.append([xmin, ymin, xmax, ymax])
+                boxes.append(tmp)
+                curr_line += curr_box_count
+        
+        return img_paths, boxes
+    
+
+    def __len__(self) -> int:
+        return len(self.img_paths)
 
 
 
@@ -288,7 +403,6 @@ def parse():
     parser.add_argument('--save_dir', type=str, default='results')
     parser.add_argument('--data_dir', type=str, default='data/', help='Root dir of data')
     parser.add_argument('--device', type=str, default='cpu', help='Device to train on')
-    parser.add_argument('--pin', action='store_true', default='Flag to enable memory pinning for faster training')
     parser.add_argument('--visualize', action='store_true', help='flag to visualize some results')
     parser.add_argument('--ann_path', type=str, default='../drive/MyDrive/Research/annotations.csv', help='path to annotations')
 
@@ -302,18 +416,22 @@ def parse():
 
     # Flags
     parser.add_argument('--fudan', action='store_true', help='Flag to enable training with PennFudan Dataset')
+    parser.add_argument('--wider', action='store_true', help='Flag to enable training with WIDER Face Dataset')
 
     args = parser.parse_args()
     return args
 
 
-def get_dataset(root: str, ann_path: Optional[str] = '', transforms: Optional[Callable] = None) -> Dataset:    
+def get_dataset(root: str, ann_path: Optional[str] = '', transforms: Optional[Callable] = None, 
+                dset: str = 'fudan', split: Optional[str] = 'train') -> Dataset:    
     # Initialize dataset object and return handle
     
-    if not ann_path:
+    if dset == 'fudan':
         dataset = PennFudanDataset(root, transforms)
-    else:
+    elif dset == 'droneface':
         dataset = DroneFaceDataset(root, ann_path=ann_path, transforms=transforms)
+    else:
+        dataset = WIDERFaceDataset(root, annotations=ann_path, transforms=transforms, split=split)
     return dataset
 
 
@@ -330,20 +448,28 @@ def get_loaders(args: Any) -> Tuple[DataLoader, DataLoader]:
     # Get the dataset
     if args.fudan:
         dataset = get_dataset(args.data_dir, transforms=augment)
+    elif args.wider:
+        dataset = get_dataset(args.data_dir, ann_path=args.ann_pth, transforms=augment, dset='wider')
+        val_dataset = get_dataset(args.data_dir, ann_path=args.ann_path, transforms=augment, dset='wider', split='val')
     else:
-        dataset = get_dataset(args.data_dir, ann_path=args.ann_path, transforms=augment)
+        dataset = get_dataset(args.data_dir, ann_path=args.ann_path, transforms=augment, dset='droneface')    
     
-    # Create a 10:1 split on training/val data
-    val_batches = (args.num_batches // 11) * args.batch_size
-    train_batches = (args.num_batches - (args.num_batches // 11) ) * args.batch_size    
-    train_data, val_data, _ = torch.utils.data.random_split(
-        dataset, [train_batches, val_batches, len(dataset) - args.batch_size*args.num_batches]
-    )
+    
+    if args.wider:
+        train_data, val_data = dataset, val_dataset
+    
+    else:
+        # Create a 10:1 split on training/val data
+        val_batches = (args.num_batches // 11) * args.batch_size
+        train_batches = (args.num_batches - (args.num_batches // 11) ) * args.batch_size    
+        train_data, val_data, _ = torch.utils.data.random_split(
+            dataset, [train_batches, val_batches, len(dataset) - args.batch_size*args.num_batches]
+        )
 
     # Create dataloaders, training data is shuffled
     # TODO: Add code to implement cross-validation
-    train_loader = DataLoader(train_data, args.batch_size, shuffle=True, num_workers=args.num_workers, collate_fn=collate_fn, pin_memory=args.pin)
-    val_loader = DataLoader(val_data, args.batch_size, num_workers=args.num_workers, collate_fn=collate_fn, pin_memory=args.pin)
+    train_loader = DataLoader(train_data, args.batch_size, shuffle=True, num_workers=args.num_workers, collate_fn=collate_fn)
+    val_loader = DataLoader(val_data, args.batch_size, num_workers=args.num_workers, collate_fn=collate_fn)
 
     # Return the training and validation loaders
     return train_loader, val_loader
