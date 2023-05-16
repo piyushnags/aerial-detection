@@ -452,7 +452,7 @@ def get_loaders(args: Any) -> Tuple[DataLoader, DataLoader]:
     
     
     if args.wider:
-        indices = torch.randperm(len(dataset))[:( args.num_batches*args.num_size )]
+        indices = torch.randperm(len(dataset))[:( args.num_batches*args.batch_size )]
         train_data, val_data = Subset(dataset, indices), val_dataset
     
     else:
