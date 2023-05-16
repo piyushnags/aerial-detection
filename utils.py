@@ -359,6 +359,7 @@ class WIDERFaceDataset(Dataset):
 
         # Compute the area of all bounding boxes
         # all hail vectorized operations
+        print(boxes)
         area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
         targets['area'] = area
 
