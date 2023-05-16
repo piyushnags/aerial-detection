@@ -310,7 +310,6 @@ class WIDERFaceDataset(Dataset):
         img_path = self.img_paths[idx]
         probe = img_path.split('/')
         probe = os.path.join( *probe[2:] )
-        print(probe)
 
         boxes = []
         with open(self.ann, 'r') as fd:
@@ -320,7 +319,7 @@ class WIDERFaceDataset(Dataset):
                 if line[-4:] != '.jpg':
                     line = fd.readline()
 
-                elif line == img_path:
+                elif line == probe:
                     line = fd.readline()
                     line = line.strip()
                     num_boxes = int(line)
