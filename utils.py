@@ -4,6 +4,7 @@ from typing import Callable, Optional, Tuple, List, Dict, Any
 from io import BytesIO
 from zipfile import ZipFile
 import argparse
+from glob import glob
 
 # Data Imports
 from pandas.core.common import flatten
@@ -290,10 +291,10 @@ class WIDERFaceDataset(Dataset):
         prefix = f'WIDER_{split}/images'
         scenes = os.listdir(prefix)
         for scene in scenes:
-            img_paths.append( os.listdir( os.path.join(prefix, scene) ) )
+            names = glob( os.path.join(prefix, scene), '*' )
+            img_paths.append( names )
         
         self.img_paths = list(flatten(img_paths))
-        self.prefix = prefix
         
         # Load annotations
         annotations = annotations.replace('train', split)
@@ -334,7 +335,6 @@ class WIDERFaceDataset(Dataset):
                     line = fd.readline()
         
         # Get the image as a torch tensor
-        img_path = os.path.join(self.prefix, img_path)
         img = Image.open(img_path).convert('RGB')
         to_tensor = T.ToTensor()
         img = to_tensor(img)
