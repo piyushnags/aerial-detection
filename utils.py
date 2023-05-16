@@ -284,7 +284,7 @@ class WIDERFaceDataset(Dataset):
         
         # Load annotations
         annotations = annotations.replace('train', split)
-        self.img_paths, self.offsets = self._load_paths(annotations)
+        self.img_paths = self._load_paths(annotations)
         self.transforms = transforms
         
         self.split = split
@@ -292,27 +292,33 @@ class WIDERFaceDataset(Dataset):
     
 
     def __getitem__(self, idx) -> Tuple[List[Tensor], List[Dict[str, Tensor]]]:
-        img_path, offset = self.img_paths[idx], self.offsets[idx]
-        print(f"length of dataset: {len(self.img_paths)}")
-        print(f"offset info: {len(offset)}")
-        print(f"Offsets list info: {len(self.offsets)}")
+        img_path = self.img_paths[idx]
 
         with open(self.ann, 'r') as fd:
-            fd.seek(offset)
-            fd.readline()
-            
             line = fd.readline()
-            line = line.strip()
-            num_boxes = int(line)
-
-            boxes = []
-            for _ in range(num_boxes):
-                line = fd.readline()
+            while line != '':
                 line = line.strip()
-                line = line.split(" ")
-                x, y, w, h = map(float, line[:4])
-                xmin, ymin, xmax, ymax = x, y, x+w, y+h
-                boxes.append([xmin, ymin, xmax, ymax])
+                if line[-4:] != '.jpg':
+                    line = fd.readline()
+
+                elif line == img_path:
+                    line = fd.readline()
+                    line = line.strip()
+                    num_boxes = int(line)
+
+                    boxes = []
+                    for _ in range(num_boxes):
+                        line = fd.readline()
+                        line = line.strip()
+                        line = line.split(" ")
+                        x, y, w, h = map(float, line[:4])
+                        xmin, ymin, xmax, ymax = x, y, x+w, y+h
+                        boxes.append([xmin, ymin, xmax, ymax])
+
+                    break
+
+                else:
+                    line = fd.readline()
         
         # Get the image as a torch tensor
         prefix = f'WIDER_{self.split}/images/'
@@ -357,23 +363,18 @@ class WIDERFaceDataset(Dataset):
         return img, targets
     
 
-    def _load_paths(self, ann_path: str) -> Tuple[List[str], List[int]]:
+    def _load_paths(self, ann_path: str) -> List[str]:
         # Read all the lines from ann file
         img_paths = []
-        offsets = []
         with open(ann_path, 'r') as fd:
-            offset = 0
             for line in fd:
                 l = line.strip()
                 if l[-4:] != '.jpg':
                     continue
                 else:
-                    offsets.append(offset)
                     img_paths.append(l)
 
-                offset += len(line)
-
-        return img_paths, offsets        
+        return img_paths       
     
 
     def __len__(self) -> int:
