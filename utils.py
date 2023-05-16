@@ -310,6 +310,7 @@ class WIDERFaceDataset(Dataset):
         img_path = self.img_paths[idx]
         probe = img_path.split('/')
         probe = os.path.join( *probe[2:] )
+        print(probe)
 
         boxes = []
         with open(self.ann, 'r') as fd:
