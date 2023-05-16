@@ -267,10 +267,15 @@ class WIDERFaceDataset(Dataset):
     def __init__(self, data_dir: str, annotations: str, transforms: Optional[Callable] = None, split: str = 'train'):
         super(WIDERFaceDataset, self).__init__()
 
+        # Dataset split
+        if split not in ['train', 'val', 'test']:
+            raise ValueError(f"{split} is not a valid split")
+        
         # Check if data_dir is valid and save the dir path
         if not os.path.exists(data_dir):
             raise FileNotFoundError(f"{data_dir} is not a valid ZipFile containing datset")
         
+        data_dir = data_dir.replace('train', split)
         self.data_dir = data_dir
 
         # Check if annotation path is valid and save the file path
@@ -280,10 +285,6 @@ class WIDERFaceDataset(Dataset):
         # Load annotations
         self.img_paths, self.boxes = self._load_annotations(annotations)
         self.transforms = transforms
-
-        # Dataset split
-        if split not in ['train', 'val', 'test']:
-            raise ValueError(f"{split} is not a valid split")
         
         self.split = split
     
@@ -456,7 +457,7 @@ def get_loaders(args: Any) -> Tuple[DataLoader, DataLoader]:
     
     
     if args.wider:
-        train_data, val_data = dataset, val_dataset
+        train_data, val_data = dataset[:( args.num_batches*args.batch_size )], val_dataset
     
     else:
         # Create a 10:1 split on training/val data
