@@ -299,7 +299,7 @@ class WIDERFaceDataset(Dataset):
 
     def __getitem__(self, idx) -> Tuple[ List[Tensor], List[Dict[str, Tensor]] ]:
         with self.lock:
-            img_paths = list( lambda x: x[-4:] == '.jpg', filter(self.zf.namelist()) )
+            img_paths = list( filter(lambda x: x[-4:] == '.jpg', self.zf.namelist()) )
             img_path = img_paths[idx]
             print(img_path)
 
