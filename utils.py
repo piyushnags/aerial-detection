@@ -309,6 +309,7 @@ class WIDERFaceDataset(Dataset):
     def __getitem__(self, idx) -> Tuple[ List[Tensor], List[Dict[str, Tensor]] ]:
         img_path = self.img_paths[idx]
 
+        boxes = []
         with open(self.ann, 'r') as fd:
             line = fd.readline()
             while line != '':
@@ -321,7 +322,6 @@ class WIDERFaceDataset(Dataset):
                     line = line.strip()
                     num_boxes = int(line)
 
-                    boxes = []
                     for _ in range(num_boxes):
                         line = fd.readline()
                         line = line.strip()
