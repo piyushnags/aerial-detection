@@ -284,10 +284,7 @@ class WIDERFaceDataset(Dataset):
         
         # Load annotations
         annotations = annotations.replace('train', split)
-        # self.img_paths = self._load_paths(annotations)
         self.img_paths = list(filter(lambda x: x[-4:] == '.jpg', ZipFile(data_dir).namelist()))
-
-
         self.transforms = transforms
         
         self.split = split
@@ -325,8 +322,8 @@ class WIDERFaceDataset(Dataset):
                     line = fd.readline()
         
         # Get the image as a torch tensor
-        prefix = f'WIDER_{self.split}/images/'
-        img_path = os.path.join(prefix, img_path)
+        # prefix = f'WIDER_{self.split}/images/'
+        # img_path = os.path.join(prefix, img_path)
 
         with ZipFile(img_path, 'r') as archive:
             with archive.open(img_path) as fd:
