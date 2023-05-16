@@ -308,6 +308,8 @@ class WIDERFaceDataset(Dataset):
 
     def __getitem__(self, idx) -> Tuple[ List[Tensor], List[Dict[str, Tensor]] ]:
         img_path = self.img_paths[idx]
+        probe = img_path.split('/')
+        probe = os.path.join( *probe[2:] )
 
         boxes = []
         with open(self.ann, 'r') as fd:
