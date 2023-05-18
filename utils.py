@@ -524,13 +524,6 @@ def get_loaders(args: Any) -> Tuple[DataLoader, DataLoader]:
     if args.wider:
         indices = torch.randperm(len(dataset))[:( args.num_batches*args.batch_size )]
         train_data, val_data = Subset(dataset, indices), val_dataset
-        degen_indices = get_degen_indices(train_data)
-        
-        if len(degen_indices) != 0:
-            indices = indices[ indices not in degen_indices ]
-            n = args.num_batches*args.batch_size
-            indices = torch.cat( ( indices, torch.randperm(len(dataset))[n:n+len(degen_indices)] ) )
-            train_data = Subset(dataset, indices)
     
     else:
         # Create a 10:1 split on training/val data
