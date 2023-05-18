@@ -343,10 +343,16 @@ class WIDERFaceDataset(Dataset):
                         line = line.strip()
                         line = line.split(" ")
                         x, y, w, h = map(float, line[:4])
-                        xmin, ymin, xmax, ymax = x, y, x+w, y+h
 
                         # Correcting degen boxes
-                        # TODO: Add correction here (epsilon)
+                        # TODO: Add correction here
+                        if w < 11:
+                            w += 11
+
+                        if h < 11:
+                            h += 11 
+
+                        xmin, ymin, xmax, ymax = x, y, x+w, y+h
 
                         boxes.append([xmin, ymin, xmax, ymax])
                     break
