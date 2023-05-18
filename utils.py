@@ -296,6 +296,14 @@ class WIDERFaceDataset(Dataset):
             img_paths.append( names )
         
         self.img_paths = list(flatten(img_paths))
+        degen_images = [
+            f'WIDER_{split}/images/0--Parade/0_Parade_Parade_0_452.jpg',
+            f'WIDER_{split}/images/2--Demonstration/2_Demonstration_Political_Rally_2_444.jpg',
+            f'WIDER_{split}/images/39--Ice_Skating/39_Ice_Skating_iceskiing_39_380.jpg',
+            f'WIDER_{split}/images/46--Jockey/46_Jockey_Jockey_46_576.jpg'
+        ]
+        for im in degen_images:
+            self.img_paths.remove(im)
         
         # Load annotations
         annotations = annotations.replace('train', split)
