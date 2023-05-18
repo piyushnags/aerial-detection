@@ -428,7 +428,7 @@ class WIDERFaceDataset(Dataset):
         image_id = torch.tensor([idx])
         targets['image_id'] = image_id
 
-        if self.transforms is not None:
+        if (self.transforms is not None) and len(boxes) != 0:
             img, targets = self.transforms(img, targets)
 
         return img, targets     
