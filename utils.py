@@ -388,6 +388,9 @@ class WIDERFaceDataset(Dataset):
                 xmin, ymin, xmax, ymax = x, y, x+w, y+h
                 boxes.append( [xmin, ymin, xmax, ymax] )
                 i += 1
+            
+            if len(boxes) == 0:
+                print(f"i: {i} and num_boxes: {num_boxes}")
        
         # Get the image as a torch tensor
         img = Image.open(img_path).convert('RGB')

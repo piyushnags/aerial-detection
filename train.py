@@ -36,6 +36,8 @@ def train(args: Any, model: nn.Module, train_loader: DataLoader, val_loader: Dat
     # Set optimizer
     if args.optim == 'adam':
         optimizer = torch.optim.Adam(params, lr=args.lr, weight_decay=args.weight_decay)
+    elif args.optim == 'sgd':
+        optimizer = torch.optim.SGD(params, lr=args.lr, momentum=0.9, weight_decay=args.weight_decay, nesterov=True)
     else:
         raise ValueError(f'Optimizer {args.optim} not supported currently')
 
