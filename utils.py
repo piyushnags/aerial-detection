@@ -349,14 +349,13 @@ class WIDERFaceDataset(Dataset):
                         # TODO: Add correction here (epsilon)
 
                         boxes.append([xmin, ymin, xmax, ymax])
-                        print(boxes)
-
                     break
 
                 # An image but doesn't match, skip it
                 else:
                     line = fd.readline()
         
+        print(boxes)
         # Get the image as a torch tensor
         img = Image.open(img_path).convert('RGB')
         to_tensor = T.ToTensor()
