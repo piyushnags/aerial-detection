@@ -304,6 +304,9 @@ class WIDERFaceDataset(Dataset):
         # Save split and ann file path
         self.split = split
         self.ann = annotations
+
+        # Get offsets in annotation file for faster training
+        self.offsets = self._cache_offsets()
     
 
     '''
@@ -312,6 +315,7 @@ class WIDERFaceDataset(Dataset):
     '''
     def __getitem__(self, idx) -> Tuple[ List[Tensor], List[Dict[str, Tensor]] ]:
         img_path = self.img_paths[idx]
+        offset = self.offsets[idx]
         
         # Extract the part from full file path necessary for 
         # comparing in the annotation file
@@ -320,46 +324,70 @@ class WIDERFaceDataset(Dataset):
 
         # Get all bboxes in the image
         boxes = []
+        # with open(self.ann, 'r') as fd:
+        #     line = fd.readline()
+
+        #     # Read until EOF
+        #     while line != '':
+        #         # Eliminate trailing spaces
+        #         line = line.strip()
+
+        #         # Skip if not an image, let's just find the image first
+        #         if line[-4:] != '.jpg':
+        #             line = fd.readline()
+
+        #         # We found the image, parse the bboxes and exit loop
+        #         elif line == probe:
+        #             line = fd.readline()
+        #             line = line.strip()
+        #             num_boxes = int(line)
+
+        #             for _ in range(num_boxes):
+        #                 line = fd.readline()
+        #                 line = line.strip()
+        #                 line = line.split(" ")
+        #                 x, y, w, h = map(float, line[:4])
+
+        #                 # Correcting degen boxes
+        #                 if w < 11:
+        #                     w += 11
+
+        #                 if h < 11:
+        #                     h += 11 
+
+        #                 xmin, ymin, xmax, ymax = x, y, x+w, y+h
+
+        #                 boxes.append([xmin, ymin, xmax, ymax])
+        #             break
+
+        #         # An image but doesn't match, skip it
+        #         else:
+        #             line = fd.readline()
+
         with open(self.ann, 'r') as fd:
+            fd.seek(offset)
+            fd.readline()
+
             line = fd.readline()
+            num_boxes = int( line.strip() )
 
-            # Read until EOF
-            while line != '':
-                # Eliminate trailing spaces
-                line = line.strip()
+            i = 0
+            while i < num_boxes:
+                line = fd.readline().strip()
+                line = line.split(" ")
+                x, y, w, h = map(float, line[:4])
 
-                # Skip if not an image, let's just find the image first
-                if line[-4:] != '.jpg':
-                    line = fd.readline()
+                # Correct degenerate boxes
+                # TODO: Consider skipping boxes too small for SSD
+                if w < 11:
+                    w += 11
+                
+                if h < 11:
+                    h += 11
 
-                # We found the image, parse the bboxes and exit loop
-                elif line == probe:
-                    line = fd.readline()
-                    line = line.strip()
-                    num_boxes = int(line)
-
-                    for _ in range(num_boxes):
-                        line = fd.readline()
-                        line = line.strip()
-                        line = line.split(" ")
-                        x, y, w, h = map(float, line[:4])
-
-                        # Correcting degen boxes
-                        # TODO: Add correction here
-                        if w < 11:
-                            w += 11
-
-                        if h < 11:
-                            h += 11 
-
-                        xmin, ymin, xmax, ymax = x, y, x+w, y+h
-
-                        boxes.append([xmin, ymin, xmax, ymax])
-                    break
-
-                # An image but doesn't match, skip it
-                else:
-                    line = fd.readline()
+                xmin, ymin, xmax, ymax = x, y, x+w, y+h
+                boxes.append( [xmin, ymin, xmax, ymax] )
+                i += 1
        
         # Get the image as a torch tensor
         img = Image.open(img_path).convert('RGB')
@@ -398,6 +426,20 @@ class WIDERFaceDataset(Dataset):
         return img, targets     
     
 
+    def _cache_offsets(self) -> List[int]:
+        offsets = []
+        offset = 0
+        with open(self.ann, 'r') as fd:
+            for line in fd:
+                l = line.strip()
+                if l[-4:] == '.jpg':
+                    offsets.append(offset)
+                offset += len(line)
+                offsets.append(offset)
+
+        return offsets
+    
+    
     def __len__(self) -> int:
         return len(self.img_paths)
 
