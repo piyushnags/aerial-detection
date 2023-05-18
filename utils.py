@@ -418,7 +418,10 @@ class WIDERFaceDataset(Dataset):
 
         # Compute the area of all bounding boxes
         # all hail vectorized operations
-        area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
+        if len(boxes) == 0:
+            area = 0
+        else:
+            area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
         targets['area'] = area
 
         # image ids are just the index, make a 1-D tensor
@@ -529,6 +532,13 @@ def get_loaders(args: Any) -> Tuple[DataLoader, DataLoader]:
     if args.wider:
         indices = torch.randperm(len(dataset))[:( args.num_batches*args.batch_size )]
         train_data, val_data = Subset(dataset, indices), val_dataset
+        degen_indices = get_degen_indices(train_data)
+        
+        if len(degen_indices) != 0:
+            indices = indices[ indices not in degen_indices ]
+            n = args.num_batches*args.batch_size
+            indices = torch.cat( ( indices, torch.randperm(len(dataset))[n:n+len(degen_indices)] ) )
+            train_data = Subset(dataset, indices)
     
     else:
         # Create a 10:1 split on training/val data
@@ -545,6 +555,15 @@ def get_loaders(args: Any) -> Tuple[DataLoader, DataLoader]:
 
     # Return the training and validation loaders
     return train_loader, val_loader
+
+
+def get_degen_indices(dataset: Dataset) -> Tensor:
+    indices = []
+    for idx in range(len(dataset)):
+        _, targets = dataset[idx]
+        if len( targets['boxes'] ) == 0:
+            indices.append(idx)
+    return torch.as_tensor(indices)
 
 
 def collate_fn(batch) -> Tuple:
