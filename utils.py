@@ -369,6 +369,7 @@ class WIDERFaceDataset(Dataset):
             fd.readline()
 
             line = fd.readline()
+            print(f"line/num_boxes: {line}")
             num_boxes = int( line.strip() )
 
             i = 0
@@ -413,6 +414,7 @@ class WIDERFaceDataset(Dataset):
 
         # Compute the area of all bounding boxes
         # all hail vectorized operations
+        print(f"boxes: {boxes}")
         area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
         targets['area'] = area
 

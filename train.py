@@ -72,6 +72,7 @@ def train(args: Any, model: nn.Module, train_loader: DataLoader, val_loader: Dat
 
 
 if __name__ == '__main__':
+    torch.manual_seed(2023)
     args = parse()
     if args.train:
         # Get data loaders
