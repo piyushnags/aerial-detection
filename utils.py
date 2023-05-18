@@ -368,9 +368,8 @@ class WIDERFaceDataset(Dataset):
             fd.seek(offset)
             fd.readline()
 
-            l = fd.readline()
-            print(l)
-            num_boxes = int( l.strip() )
+            line = fd.readline()
+            num_boxes = int( line.strip() )
 
             i = 0
             while i < num_boxes:
@@ -436,7 +435,6 @@ class WIDERFaceDataset(Dataset):
                 if l[-4:] == '.jpg':
                     offsets.append(offset)
                 offset += len(line)
-                offsets.append(offset)
 
         return offsets
     
