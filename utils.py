@@ -368,8 +368,8 @@ class WIDERFaceDataset(Dataset):
             fd.seek(offset)
             fd.readline()
 
-            line = fd.readline()
-            num_boxes = int( line.strip() )
+            l = fd.readline()
+            num_boxes = int( l.strip() )
 
             i = 0
             while i < num_boxes:
