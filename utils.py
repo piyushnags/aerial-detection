@@ -369,6 +369,7 @@ class WIDERFaceDataset(Dataset):
             fd.readline()
 
             l = fd.readline()
+            print(l)
             num_boxes = int( l.strip() )
 
             i = 0
