@@ -391,6 +391,8 @@ class WIDERFaceDataset(Dataset):
             
             if len(boxes) == 0:
                 print(f"i: {i} and num_boxes: {num_boxes}")
+                fd.seek(offset)
+                print(fd.readline())
        
         # Get the image as a torch tensor
         img = Image.open(img_path).convert('RGB')
