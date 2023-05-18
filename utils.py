@@ -326,9 +326,6 @@ class WIDERFaceDataset(Dataset):
     def __getitem__(self, idx) -> Tuple[ List[Tensor], List[Dict[str, Tensor]] ]:
         img_path = self.img_paths[idx]
         offset = self.offsets[idx]
-        print(len(self.img_paths))
-        print(len(self.offsets))
-
         
         # Extract the part from full file path necessary for 
         # comparing in the annotation file
