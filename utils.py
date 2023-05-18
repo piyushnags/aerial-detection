@@ -388,11 +388,6 @@ class WIDERFaceDataset(Dataset):
                 xmin, ymin, xmax, ymax = x, y, x+w, y+h
                 boxes.append( [xmin, ymin, xmax, ymax] )
                 i += 1
-            
-            if len(boxes) == 0:
-                print(f"i: {i} and num_boxes: {num_boxes}")
-                fd.seek(offset)
-                print(fd.readline())
        
         # Get the image as a torch tensor
         img = Image.open(img_path).convert('RGB')
@@ -418,17 +413,14 @@ class WIDERFaceDataset(Dataset):
 
         # Compute the area of all bounding boxes
         # all hail vectorized operations
-        if len(boxes) == 0:
-            area = 0
-        else:
-            area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
+        area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
         targets['area'] = area
 
         # image ids are just the index, make a 1-D tensor
         image_id = torch.tensor([idx])
         targets['image_id'] = image_id
 
-        if (self.transforms is not None) and len(boxes) != 0:
+        if self.transforms is not None:
             img, targets = self.transforms(img, targets)
 
         return img, targets     
