@@ -96,8 +96,8 @@ def resume_training(args: Any):
     params = [p for p in model.parameters() if p.requires_grad]
     trainable = sum([p.numel() for p in model.parameters() if p.requires_grad])
     print("No. of trainable parameters: {}".format(trainable))
-    model.to(device)
     model.load_state_dict(model_state_dict)
+    model.to(device)
 
     if args.optim == 'adam':
         optimizer = torch.optim.Adam(params, lr=args.lr, weight_decay=args.weight_decay)
