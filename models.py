@@ -16,8 +16,7 @@ class SSDLite(nn.Module):
     '''
     Description:
         Wrapper for SSDLite MobileNetv3. Modified the model
-        to support VisDrone dataset as described in
-        https://github.com/VisDrone/VisDrone2018-DET-toolkit
+        to support other datasets.
 
         PyTorch implementation of SSDLite MobileNetV3 is based 
         on the implementation described in the "Searching for MobileNetV3"
