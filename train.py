@@ -86,7 +86,7 @@ def resume_training(args: Any):
     
     ckpt = torch.load( args.model_path, map_location=device )
     model_state_dict = ckpt['model_state_dict']
-    optimizer_state_dict = ckpt['optimize_state_dict']
+    optimizer_state_dict = ckpt['optimizer_state_dict']
     scheduler_state_dict = ckpt['scheduler_state_dict']
     e = ckpt['epoch']
     
