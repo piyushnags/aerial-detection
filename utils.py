@@ -324,55 +324,10 @@ class WIDERFaceDataset(Dataset):
           loading during training
     '''
     def __getitem__(self, idx) -> Tuple[ List[Tensor], List[Dict[str, Tensor]] ]:
-        img_path = self.img_paths[idx]
-        offset = self.offsets[idx]
-        
-        # Extract the part from full file path necessary for 
-        # comparing in the annotation file
-        # probe = img_path.split('/')
-        # probe = os.path.join( *probe[2:] )
+        img_path, offset = self.img_paths[idx], self.offsets[idx]
 
         # Get all bboxes in the image
         boxes = []
-        # with open(self.ann, 'r') as fd:
-        #     line = fd.readline()
-
-        #     # Read until EOF
-        #     while line != '':
-        #         # Eliminate trailing spaces
-        #         line = line.strip()
-
-        #         # Skip if not an image, let's just find the image first
-        #         if line[-4:] != '.jpg':
-        #             line = fd.readline()
-
-        #         # We found the image, parse the bboxes and exit loop
-        #         elif line == probe:
-        #             line = fd.readline()
-        #             line = line.strip()
-        #             num_boxes = int(line)
-
-        #             for _ in range(num_boxes):
-        #                 line = fd.readline()
-        #                 line = line.strip()
-        #                 line = line.split(" ")
-        #                 x, y, w, h = map(float, line[:4])
-
-        #                 # Correcting degen boxes
-        #                 if w < 11:
-        #                     w += 11
-
-        #                 if h < 11:
-        #                     h += 11 
-
-        #                 xmin, ymin, xmax, ymax = x, y, x+w, y+h
-
-        #                 boxes.append([xmin, ymin, xmax, ymax])
-        #             break
-
-        #         # An image but doesn't match, skip it
-        #         else:
-        #             line = fd.readline()
 
         with open(self.ann, 'r') as fd:
             fd.seek(offset)
@@ -518,7 +473,7 @@ def get_loaders(args: Any) -> Tuple[DataLoader, DataLoader]:
     if args.aug:
         augment = T_.Compose([
             T_.RandomHorizontalFlip(0.5),
-            AddNoise(var=args.noise_var, mean=args.noise_mean)
+            # AddNoise(var=args.noise_var, mean=args.noise_mean)
         ])
 
     # Get the dataset
