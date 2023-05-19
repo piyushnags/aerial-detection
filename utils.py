@@ -438,8 +438,8 @@ def parse():
     parser.add_argument('--ann_path', type=str, default='../drive/MyDrive/Research/annotations.csv', help='path to annotations')
 
     # Evaluate Existing Model
-    parser.add_argument('--eval_pth', action='store_true', help='Evaluate model from a .pth file')
-    parser.add_argument('--eval_ckpt', action='store_true', help='Evaluate model from checkpoint')
+    parser.add_argument('--resume', action='store_true', help='Evaluate model')
+    parser.add_argument('--model_path', type=str, default='', help='Path to checkpoint file')
 
     # Model Config
     parser.add_argument('--use_pretrained', action='store_true', help='Uses pretrained Imagenet weights for MobileNetv3 backbone')
