@@ -111,7 +111,7 @@ def resume_training(args: Any):
     scheduler = None
     if args.scheduler == 'step':
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.step_size, gamma=args.gamma)
-        scheduler.load( scheduler_state_dict )
+        scheduler.load_state_dict( scheduler_state_dict )
     
     if not os.path.exists(args.save_dir):
         os.makedirs(args.save_dir)
